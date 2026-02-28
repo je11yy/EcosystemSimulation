@@ -2,11 +2,10 @@
 line-length = 100
 target-version = "py311"
 
-# Чтобы Ruff понимал, где твой код
-src = ["server", "simulationCore"]
+src = ["server", "simulation_core"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B"]  # базовый, адекватный набор
+select = ["E", "F", "I", "B"]
 ignore = []
 
 [tool.ruff.format]
