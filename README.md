@@ -19,5 +19,14 @@
 ### Части проекта
 - `frontend` - папка frontend
 - `server` - папка server
-- `core` - папка simulationCore
+- `core` - папка simulation_core
 - `other` - другое
+
+---
+
+### Установка зависимостей
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
