@@ -18,8 +18,8 @@
 
 ### Части проекта
 - `frontend` - папка frontend
-- `server` - папка server
-- `core` - папка simulation_core
+- `server` - папка api-server и simulation-service
+- `core` - папки simulation_core и simulation-service
 - `other` - другое
 
 ---
@@ -30,3 +30,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+---
+
+### Запуск
+```
+docker compose down
+docker compose up --build
+``

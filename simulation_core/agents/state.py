@@ -36,9 +36,6 @@ class IndividualState:
         self.base_strength = clamp(self.base_strength, cfg.strength_min, cfg.strength_max)
         self.base_defense = clamp(self.base_defense, cfg.defense_min, cfg.defense_max)
 
-        if self.starvation_ticks < 0:
-            self.starvation_ticks = 0
-
     def increase_hunger(self, amount: int, cfg: SimConfig) -> None:
         self.hunger = clamp(self.hunger + amount, cfg.hunger_min, cfg.hunger_max)
 

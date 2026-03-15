@@ -1,7 +1,7 @@
 lint:
-	ruff check server simulation_core
+	ruff check simulation_service api_server simulation_core
 	cd frontend && npm run lint
 
 format:
-	ruff format server simulation_core
+	ruff format simulation_service api_server simulation_core
 	cd frontend && npm run format

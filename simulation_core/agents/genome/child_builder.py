@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 import random
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from simulation_core.agents.genome.genome import Genome
 from simulation_core.agents.genome.mutation import MutationModel
 from simulation_core.agents.genome.recombination import RecombinationModel
-from simulation_core.agents.registry import Agent
+
+if TYPE_CHECKING:
+    from simulation_core.agents.registry import Agent
 
 
 @dataclass
