@@ -30,6 +30,7 @@ from simulation_core.engine.applier import ActionApplier, AppliedActionResult
 from simulation_core.engine.conflict_resolver import ConflictResolver
 from simulation_core.types import IndividualId, Tick
 from simulation_core.world.api import WorldReadAPI
+from simulation_core.world.simple_food_diffusion import SimpleFoodDiffusionModel
 
 
 @dataclass(frozen=True)
@@ -103,6 +104,7 @@ class SimulationEngine:
         genome_updater: GenomeUpdater,  # Обновлятор состояний геномов
         child_genome_builder: ChildGenomeBuilder,  # Компонент для создания генома ребенка
         genome_effects_resolver: GenomeEffectsResolver,  # Компонент для разрешения эффектов генов
+        food_diffusion_model: SimpleFoodDiffusionModel,  # Модель диффузии еды
         seed: int = 0,  # Seed для генератора случайных чисел
     ) -> None:
         self.cfg = cfg  # Конфигурация симуляции
@@ -115,6 +117,7 @@ class SimulationEngine:
         self.agents = AgentRegistry()  # Реестр всех агентов
         self.applier = ActionApplier()  # Применятель действий
         self.conflict_resolver = ConflictResolver()
+        self.food_diffusion_model = food_diffusion_model
 
     def add_agent(self, agent: Agent) -> None:
         agent.state.validate(self.cfg)
@@ -180,6 +183,7 @@ class SimulationEngine:
         """Регенерирует еду на всех территориях мира."""
         for territory in self.world.all_territories():
             territory.regenerate_food()
+        self.food_diffusion_model.diffuse(self.world)
 
     def build_territory_dtos(self) -> list[TerritoryDTO]:
         territories: list[TerritoryDTO] = []
