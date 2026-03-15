@@ -1,8 +1,10 @@
 from typing import Any, Mapping, NewType
 
-Tick = NewType("Tick", int)
-IndividualId = NewType("IndividualId", str)
-TerritoryId = NewType("TerritoryId", str)
+# Основные типы для симуляции
+Tick = NewType("Tick", int)  # Номер тика симуляции (шага времени)
+IndividualId = NewType("IndividualId", str)  # Уникальный ID агента
+TerritoryId = NewType("TerritoryId", str)  # Уникальный ID территории
 
-JSON = dict[str, Any]
-JSONLike = Mapping[str, Any]
+# Типы для работы с JSON
+JSON = dict[str, Any]  # Словарь, представляющий JSON объект
+JSONLike = Mapping[str, Any]  # Неизменяемый mapping, совместимый с JSON

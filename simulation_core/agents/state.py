@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Literal, Optional
 
 from simulation_core.config import SimConfig
 from simulation_core.types import IndividualId, TerritoryId
@@ -7,23 +8,36 @@ from simulation_core.utils import clamp
 
 @dataclass
 class IndividualState:
-    id: IndividualId
-    location: TerritoryId
+    """Состояние индивидуального агента в симуляции."""
 
-    hunger: int
-    strength: int
-    defense: int
+    id: IndividualId  # Уникальный идентификатор агента
+    location: TerritoryId  # ID территории, где находится агент
 
-    pregnant: bool = False
-    ticks_to_birth: int = 0
+    # базовые характеристики
+    base_strength: int  # 1..5 - сила агента (влияет на боевые действия)
+    base_defense: int  # 1..5 - защита агента (сопротивление атакам)
 
-    temp_pref: float = 20.0
-    satisfaction: float = 1.0
+    hunger: int  # 0..5 - уровень голода (0 = сыт, 5 = максимальный голод)
+    hp: int  # 0..5 - здоровье (0 = мертв, 5 = полностью здоров)
+    sex: Literal["male", "female"]  # Пол агента
+
+    pregnant: bool = False  # Беременна ли самка
+    ticks_to_birth: int = 0  # Тиков до рождения ребенка
+    father_id: Optional[IndividualId] = None  # ID отца
+
+    base_temp_pref: float = 20.0  # Предпочитаемая температура
+    satisfaction: float = 1.0  # Уровень удовлетворенности (для будущих механик)
+
+    alive: bool = True  # Жив ли агент
 
     def validate(self, cfg: SimConfig) -> None:
         self.hunger = clamp(self.hunger, cfg.hunger_min, cfg.hunger_max)
-        self.strength = clamp(self.strength, cfg.strength_min, cfg.strength_max)
-        self.defense = clamp(self.defense, cfg.defense_min, cfg.defense_max)
+        self.hp = clamp(self.hp, cfg.hp_min, cfg.hp_max)
+        self.base_strength = clamp(self.base_strength, cfg.strength_min, cfg.strength_max)
+        self.base_defense = clamp(self.base_defense, cfg.defense_min, cfg.defense_max)
+
+        if self.starvation_ticks < 0:
+            self.starvation_ticks = 0
 
     def increase_hunger(self, amount: int, cfg: SimConfig) -> None:
         self.hunger = clamp(self.hunger + amount, cfg.hunger_min, cfg.hunger_max)
@@ -31,30 +45,10 @@ class IndividualState:
     def decrease_hunger(self, amount: int, cfg: SimConfig) -> None:
         self.hunger = clamp(self.hunger - amount, cfg.hunger_min, cfg.hunger_max)
 
-    def is_starving(self, cfg: SimConfig) -> bool:
-        return self.hunger >= cfg.hunger_max
+    def decrease_hp(self, amount: int, cfg: SimConfig) -> None:
+        self.hp = clamp(self.hp - amount, cfg.hp_min, cfg.hp_max)
+        if self.hp <= cfg.hp_min:
+            self.alive = False
 
-    def is_full(self, cfg: SimConfig) -> bool:
-        return self.hunger <= cfg.hunger_min
-
-    def is_pregnant(self) -> bool:
-        return self.pregnant
-
-    def start_pregnancy(self, gestation_period: int) -> None:
-        self.pregnant = True
-        self.ticks_to_birth = gestation_period
-
-    def progress_pregnancy(self) -> None:
-        if self.pregnant:
-            self.ticks_to_birth -= 1
-            if self.ticks_to_birth <= 0:
-                self.pregnant = False
-                self.ticks_to_birth = 0
-
-    def can_give_birth(self) -> bool:
-        return self.pregnant and self.ticks_to_birth == 0
-
-    def give_birth(self) -> None:
-        if self.can_give_birth():
-            self.pregnant = False
-            self.ticks_to_birth = 0
+    def move_to(self, territory_id: TerritoryId) -> None:
+        self.location = territory_id
