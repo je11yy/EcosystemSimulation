@@ -107,3 +107,10 @@ class RuntimeDeleteResponseDTO(BaseModel):
     ok: bool
     simulation_id: str
     removed: bool
+
+
+class RuntimeStepResponseDTO(BaseModel):
+    ok: bool
+    simulation_id: str
+    state: dict[Any, Any]
+    step_result: dict[Any, Any]

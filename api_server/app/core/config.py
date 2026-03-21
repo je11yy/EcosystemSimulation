@@ -3,15 +3,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "EcoSim API Server"
-    debug: bool = False
+    debug: bool = True
 
-    postgres_host: str
+    postgres_host: str = "db"
     postgres_port: int = 5432
-    postgres_db: str
-    postgres_user: str
-    postgres_password: str
+    postgres_db: str = "ecosim"
+    postgres_user: str = "postgres"
+    postgres_password: str = "postgres"
 
-    simulation_service_base_url: str
+    simulation_service_base_url: str = "http://simulation-service:8001"
+
+    simulation_step_interval_seconds: float = 1.0
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

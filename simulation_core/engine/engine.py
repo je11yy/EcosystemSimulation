@@ -23,6 +23,9 @@ from simulation_core.commands import (
 from simulation_core.config import SimConfig
 from simulation_core.dto import (
     AgentDTO,
+    AgentGeneDTO,
+    AgentGeneEdgeDTO,
+    AgentGeneStateDTO,
     SimulationStateDTO,
     TerritoryDTO,
 )
@@ -215,10 +218,39 @@ class SimulationEngine:
             effective_defense = self.get_effective_defense(agent)
             effective_temp_pref = self.get_effective_temp_pref(agent)
 
+            genes = [
+                AgentGeneDTO(
+                    id=gene.id,
+                    name=gene.name,
+                    chromosome_id=gene.chromosome_id,
+                    position=gene.position,
+                    default_active=gene.default_active,
+                    threshold=gene.threshold,
+                )
+                for gene in agent.genome.all_genes()
+            ]
+
+            gene_edges = [
+                AgentGeneEdgeDTO(
+                    source_gene_id=edge.source_gene_id,
+                    target_gene_id=edge.target_gene_id,
+                    weight=edge.weight,
+                )
+                for edge in agent.genome.edges
+            ]
+
+            gene_states = [
+                AgentGeneStateDTO(
+                    gene_id=gene_id,
+                    is_active=is_active,
+                )
+                for gene_id, is_active in agent.genome_state.gene_activity.items()
+            ]
+
             agents.append(
                 AgentDTO(
-                    id=agent.state.id,
-                    location=agent.state.location,
+                    id=str(agent.state.id),
+                    location=str(agent.state.location),
                     hunger=agent.state.hunger,
                     hp=agent.state.hp,
                     base_strength=agent.state.base_strength,
@@ -228,12 +260,17 @@ class SimulationEngine:
                     sex=agent.state.sex,
                     pregnant=agent.state.pregnant,
                     ticks_to_birth=agent.state.ticks_to_birth,
-                    father_id=agent.state.father_id,
+                    father_id=(
+                        str(agent.state.father_id) if agent.state.father_id is not None else None
+                    ),
                     base_temp_pref=agent.state.base_temp_pref,
                     effective_temp_pref=effective_temp_pref,
                     satisfaction=agent.state.satisfaction,
                     alive=agent.state.alive,
                     active_genes=active_genes,
+                    genes=genes,
+                    gene_edges=gene_edges,
+                    gene_states=gene_states,
                 )
             )
 

@@ -1,38 +1,72 @@
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass
 from typing import Any, Literal, Optional, Sequence
 
-from simulation_core.types import IndividualId, TerritoryId
+
+@dataclass(frozen=True)
+class AgentGeneDTO:
+    id: str
+    name: str
+    chromosome_id: str
+    position: float
+    default_active: bool
+    threshold: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class AgentGeneEdgeDTO:
+    source_gene_id: str
+    target_gene_id: str
+    weight: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class AgentGeneStateDTO:
+    gene_id: str
+    is_active: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass(frozen=True)
 class AgentDTO:
-    """DTO (Data Transfer Object) для передачи данных об агенте."""
+    id: str
+    location: str
 
-    id: IndividualId  # Уникальный ID агента
-    location: TerritoryId  # ID территории расположения
-
-    hunger: int  # Уровень голода
+    hunger: int
     hp: int
 
-    base_strength: int  # Уровень силы
+    base_strength: int
     effective_strength: int
 
-    base_defense: int  # Уровень защиты
+    base_defense: int
     effective_defense: int
 
-    sex: Literal["male", "female"]  # Пол агента
+    sex: Literal["male", "female"]
 
-    pregnant: bool  # Беременна ли самка
-    ticks_to_birth: int  # Тиков до рождения потомства
-    father_id: Optional[IndividualId]  # ID отца
+    pregnant: bool
+    ticks_to_birth: int
+    father_id: Optional[str]
 
-    base_temp_pref: float  # Предпочитаемая температура
-    effective_temp_pref: float  # Эффективная предпочтительная температура
-    satisfaction: float  # Уровень удовлетворенности
+    base_temp_pref: float
+    effective_temp_pref: float
 
-    alive: bool  # Жив ли агент
+    satisfaction: float
+    alive: bool
 
-    active_genes: Sequence[str]  # Список ID активных генов
+    active_genes: Sequence[str]
+
+    genes: Sequence[AgentGeneDTO]
+    gene_edges: Sequence[AgentGeneEdgeDTO]
+    gene_states: Sequence[AgentGeneStateDTO]
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

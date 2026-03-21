@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.simulation import Simulation
 from app.repositories.simulation_repository import SimulationRepository
 from app.services.engine_mapper import EngineMapper
 
@@ -8,6 +9,7 @@ class SimulationService:
     def __init__(self, db: AsyncSession) -> None:
         self.repo = SimulationRepository(db)
         self.mapper = EngineMapper()
+        self.db = db
 
     async def create_simulation(self, user_id: int, name: str):
         return await self.repo.create(user_id=user_id, name=name)
@@ -26,3 +28,8 @@ class SimulationService:
         if simulation is None:
             return None
         return self.mapper.to_init_dto(simulation)
+
+    async def set_status(self, simulation: Simulation, status: str) -> None:
+        simulation.status = status
+        await self.db.commit()
+        await self.db.refresh(simulation)
