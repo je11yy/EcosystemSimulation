@@ -2,11 +2,16 @@ import asyncio
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.session import SessionLocal, get_db
+from app.models.user import User
+from app.schemas.agent import AgentCreate, AgentRead
 from app.schemas.simulation import SimulationCreate, SimulationRead
+from app.schemas.territory import TerritoryCreate, TerritoryRead, TerritoryUpdate
+from app.schemas.territory_edge import TerritoryEdgeCreate, TerritoryEdgeRead
 from app.services.engine_persister import EnginePersister
 from app.services.simulation_client import SimulationClient
 from app.services.simulation_runtime_manager import SimulationRuntimeManager
@@ -21,6 +26,16 @@ async def create_simulation(
     user_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
+    # создаём пользователя если не существует
+    existing_user = await db.execute(select(User).where(User.id == user_id))
+    if existing_user.scalar_one_or_none() is None:
+        user = User(
+            id=user_id,
+            email=f"user{user_id}@example.com",
+            hashed_password="placeholder",
+        )
+        db.add(user)
+        await db.flush()
     service = SimulationService(db)
     simulation = await service.create_simulation(user_id=user_id, name=payload.name)
     return simulation
@@ -117,7 +132,15 @@ async def get_simulation_state(
         "simulation_id": simulation_id,
         "tick": payload.tick,
         "territories": [territory.model_dump() for territory in payload.territories],
-        "territory_edges": [edge.model_dump() for edge in payload.territory_edges],
+        "territory_edges": [
+            {
+                "id": edge.id,
+                "source_id": str(edge.source_territory_id),
+                "target_id": str(edge.target_territory_id),
+                "movement_cost": edge.movement_cost,
+            }
+            for edge in simulation.territory_edges
+        ],
         "agents": [agent.model_dump() for agent in payload.agents],
     }
 
@@ -247,3 +270,220 @@ async def pause_simulation(
         "status": "paused",
         "loop_stopped": stopped,
     }
+
+
+@router.post("/{simulation_id}/territories", response_model=TerritoryRead)
+async def create_territory(
+    simulation_id: int,
+    payload: TerritoryCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    service = SimulationService(db)
+    territory = await service.create_territory(simulation_id, payload)
+
+    if territory is None:
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    simulation = await service.get_full_simulation(simulation_id)
+    client = SimulationClient()
+
+    try:
+        await client.stop_runtime(simulation_id)
+    except Exception:
+        pass
+
+    if simulation is not None and simulation.status in {"loaded", "running", "paused"}:
+        init_payload = service.mapper.to_init_dto(simulation)
+        await client.init_runtime(init_payload)
+
+    return territory
+
+
+@router.post("/{simulation_id}/agents", response_model=AgentRead)
+async def create_agent(
+    simulation_id: int,
+    payload: AgentCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    service = SimulationService(db)
+    agent, error = await service.create_agent(simulation_id, payload)
+
+    if error == "simulation_not_found":
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    if error == "territory_not_found":
+        raise HTTPException(status_code=404, detail="Territory not found in simulation")
+
+    simulation = await service.get_full_simulation(simulation_id)
+    client = SimulationClient()
+
+    try:
+        await client.stop_runtime(simulation_id)
+    except Exception:
+        pass
+
+    if simulation is not None and simulation.status in {"loaded", "running", "paused"}:
+        init_payload = service.mapper.to_init_dto(simulation)
+        await client.init_runtime(init_payload)
+
+    return agent
+
+
+@router.post("/{simulation_id}/edges", response_model=TerritoryEdgeRead)
+async def create_territory_edge(
+    simulation_id: int,
+    payload: TerritoryEdgeCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    service = SimulationService(db)
+    edge, error = await service.create_territory_edge(simulation_id, payload)
+
+    if error == "simulation_not_found":
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    if error == "source_not_found":
+        raise HTTPException(status_code=404, detail="Source territory not found in simulation")
+
+    if error == "target_not_found":
+        raise HTTPException(status_code=404, detail="Target territory not found in simulation")
+
+    if error == "same_territory":
+        raise HTTPException(status_code=400, detail="Cannot connect territory to itself")
+
+    if error == "edge_already_exists":
+        raise HTTPException(status_code=400, detail="Edge already exists")
+
+    simulation = await service.get_full_simulation(simulation_id)
+    client = SimulationClient()
+
+    try:
+        await client.stop_runtime(simulation_id)
+    except Exception:
+        pass
+
+    if simulation is not None and simulation.status in {"loaded", "running", "paused"}:
+        init_payload = service.mapper.to_init_dto(simulation)
+        await client.init_runtime(init_payload)
+
+    return edge
+
+
+@router.patch("/{simulation_id}/territories/{territory_id}", response_model=TerritoryRead)
+async def update_territory(
+    simulation_id: int,
+    territory_id: int,
+    payload: TerritoryUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    service = SimulationService(db)
+    territory, error = await service.update_territory(simulation_id, territory_id, payload)
+
+    if error == "simulation_not_found":
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    if error == "territory_not_found":
+        raise HTTPException(status_code=404, detail="Territory not found")
+
+    simulation = await service.get_full_simulation(simulation_id)
+    client = SimulationClient()
+
+    try:
+        await client.stop_runtime(simulation_id)
+    except Exception:
+        pass
+
+    if simulation is not None and simulation.status in {"loaded", "running", "paused"}:
+        init_payload = service.mapper.to_init_dto(simulation)
+        await client.init_runtime(init_payload)
+
+    return territory
+
+
+@router.delete("/{simulation_id}/territories/{territory_id}")
+async def delete_territory(
+    simulation_id: int,
+    territory_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
+    service = SimulationService(db)
+    error = await service.delete_territory(simulation_id, territory_id)
+
+    if error == "simulation_not_found":
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    if error == "territory_not_found":
+        raise HTTPException(status_code=404, detail="Territory not found")
+
+    simulation = await service.get_full_simulation(simulation_id)
+    client = SimulationClient()
+
+    try:
+        await client.stop_runtime(simulation_id)
+    except Exception:
+        pass
+
+    if simulation is not None and simulation.status in {"loaded", "running", "paused"}:
+        init_payload = service.mapper.to_init_dto(simulation)
+        await client.init_runtime(init_payload)
+
+    return {"ok": True, "territory_id": territory_id}
+
+
+@router.delete("/{simulation_id}/edges/{edge_id}")
+async def delete_territory_edge(
+    simulation_id: int,
+    edge_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
+    service = SimulationService(db)
+    error = await service.delete_territory_edge(simulation_id, edge_id)
+
+    if error == "simulation_not_found":
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    if error == "edge_not_found":
+        raise HTTPException(status_code=404, detail="Edge not found")
+
+    simulation = await service.get_full_simulation(simulation_id)
+    client = SimulationClient()
+
+    try:
+        await client.stop_runtime(simulation_id)
+    except Exception:
+        pass
+
+    if simulation is not None and simulation.status in {"loaded", "running", "paused"}:
+        init_payload = service.mapper.to_init_dto(simulation)
+        await client.init_runtime(init_payload)
+
+    return {"ok": True, "edge_id": edge_id}
+
+
+@router.delete("/{simulation_id}/agents/{agent_id}")
+async def delete_agent(
+    simulation_id: int,
+    agent_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
+    service = SimulationService(db)
+    error = await service.delete_agent(simulation_id, agent_id)
+
+    if error == "simulation_not_found":
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    if error == "agent_not_found":
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    simulation = await service.get_full_simulation(simulation_id)
+    client = SimulationClient()
+
+    try:
+        await client.stop_runtime(simulation_id)
+    except Exception:
+        pass
+
+    if simulation is not None and simulation.status in {"loaded", "running", "paused"}:
+        init_payload = service.mapper.to_init_dto(simulation)
+        await client.init_runtime(init_payload)
+
+    return {"ok": True, "agent_id": agent_id}
