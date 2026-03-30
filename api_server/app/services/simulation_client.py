@@ -20,9 +20,12 @@ class SimulationClient:
         async with httpx.AsyncClient(base_url=self.base_url, timeout=30.0) as client:
             response = await client.post(
                 "/runtime/start",
-                json=payload.model_dump(),
+                json=payload.model_dump(mode="json"),
             )
-            response.raise_for_status()
+
+            if response.status_code >= 400:
+                raise RuntimeError(f"/runtime/start -> {response.status_code}: {response.text}")
+
             return response.json()
 
     async def step_runtime(self, simulation_id: Union[int, str]) -> dict[str, Any]:

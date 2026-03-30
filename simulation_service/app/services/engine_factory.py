@@ -12,6 +12,7 @@ from simulation_core.agents.genome import (
     SingleCrossoverRecombinationModel,
     ThresholdGenomeUpdater,
 )
+from simulation_core.agents.genome.effect_type import GeneEffectType
 from simulation_core.agents.registry import Agent
 from simulation_core.agents.simple_softmax_policy import SimpleSoftmaxPolicy
 from simulation_core.agents.state import IndividualState
@@ -100,8 +101,9 @@ class EngineFactory:
         for gene_dto in agent_dto.genes:
             genome.add_gene(
                 Gene(
-                    id=gene_dto.id,
+                    id=int(gene_dto.id),
                     name=gene_dto.name,
+                    effect_type=GeneEffectType(gene_dto.effect_type),
                     chromosome_id=gene_dto.chromosome_id,
                     position=gene_dto.position,
                     default_active=gene_dto.default_active,
@@ -112,29 +114,31 @@ class EngineFactory:
         for edge_dto in agent_dto.gene_edges:
             genome.add_edge(
                 GeneEdge(
-                    source_gene_id=edge_dto.source_gene_id,
-                    target_gene_id=edge_dto.target_gene_id,
+                    source_gene_id=int(edge_dto.source_gene_id),
+                    target_gene_id=int(edge_dto.target_gene_id),
                     weight=edge_dto.weight,
                 )
             )
 
         genome_state = GenomeState(
             gene_activity={
-                gene_state_dto.gene_id: gene_state_dto.is_active
+                int(gene_state_dto.gene_id): gene_state_dto.is_active
                 for gene_state_dto in agent_dto.gene_states
             }
         )
 
         state = IndividualState(
-            id=IndividualId(agent_dto.id),
+            id=IndividualId(str(agent_dto.id)),
             location=TerritoryId(agent_dto.location),
             base_strength=agent_dto.base_strength,
             base_defense=agent_dto.base_defense,
             hunger=agent_dto.hunger,
             hp=agent_dto.hp,
             sex=cast(Literal["male", "female"], agent_dto.sex),
+            species_group=agent_dto.species_group,
             pregnant=agent_dto.pregnant,
             ticks_to_birth=agent_dto.ticks_to_birth,
+            hunt_cooldown=agent_dto.hunt_cooldown,
             father_id=IndividualId(agent_dto.father_id)
             if agent_dto.father_id is not None
             else None,

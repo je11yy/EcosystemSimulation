@@ -29,7 +29,7 @@ class EnginePersister:
 
         existing_agents_by_id = {agent.id: agent for agent in simulation.agents}
 
-        state_agent_ids = {int(agent_data["id"]) for agent_data in state["agents"]}
+        state_agent_ids = {agent_data["id"] for agent_data in state["agents"]}
 
         # удалить агентов, которых больше нет в state
         for existing_agent in list(simulation.agents):
@@ -41,7 +41,7 @@ class EnginePersister:
         existing_agents_by_id = {agent.id: agent for agent in simulation.agents}
 
         for agent_data in state["agents"]:
-            agent_id = int(agent_data["id"])
+            agent_id = agent_data["id"]
 
             if agent_id not in existing_agents_by_id:
                 new_agent = Agent(
@@ -55,10 +55,9 @@ class EnginePersister:
                     sex=agent_data["sex"],
                     pregnant=agent_data["pregnant"],
                     ticks_to_birth=agent_data["ticks_to_birth"],
+                    hunt_cooldown=agent_data.get("hunt_cooldown", 0),
                     father_id=(
-                        int(agent_data["father_id"])
-                        if agent_data["father_id"] is not None
-                        else None
+                        agent_data["father_id"] if agent_data["father_id"] is not None else None
                     ),
                     base_temp_pref=agent_data["base_temp_pref"],
                     satisfaction=agent_data["satisfaction"],
@@ -78,8 +77,9 @@ class EnginePersister:
             agent.sex = agent_data["sex"]
             agent.pregnant = agent_data["pregnant"]
             agent.ticks_to_birth = agent_data["ticks_to_birth"]
+            agent.hunt_cooldown = agent_data.get("hunt_cooldown", 0)
             agent.father_id = (
-                int(agent_data["father_id"]) if agent_data["father_id"] is not None else None
+                agent_data["father_id"] if agent_data["father_id"] is not None else None
             )
             agent.base_temp_pref = agent_data["base_temp_pref"]
             agent.satisfaction = agent_data["satisfaction"]
@@ -95,9 +95,10 @@ class EnginePersister:
             for gene_data in agent_data["genes"]:
                 self.db.add(
                     Gene(
+                        id=int(gene_data["id"]),
                         agent_id=agent.id,
-                        gene_key=gene_data["id"],
                         name=gene_data["name"],
+                        effect_type=gene_data["effect_type"],
                         chromosome_id=gene_data["chromosome_id"],
                         position=gene_data["position"],
                         default_active=gene_data["default_active"],
@@ -111,8 +112,8 @@ class EnginePersister:
                 self.db.add(
                     GeneEdge(
                         agent_id=agent.id,
-                        source_gene_key=edge_data["source_gene_id"],
-                        target_gene_key=edge_data["target_gene_id"],
+                        source_gene_id=str(edge_data["source_gene_id"]),
+                        target_gene_id=str(edge_data["target_gene_id"]),
                         weight=edge_data["weight"],
                     )
                 )
@@ -121,7 +122,7 @@ class EnginePersister:
                 self.db.add(
                     GeneState(
                         agent_id=agent.id,
-                        gene_key=gene_state_data["gene_id"],
+                        gene_id=str(gene_state_data["gene_id"]),
                         is_active=gene_state_data["is_active"],
                     )
                 )

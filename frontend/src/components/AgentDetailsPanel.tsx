@@ -1,4 +1,5 @@
 import type { AgentState } from "../api/types";
+import { GenomeGraph } from "./GenomeGraph";
 
 type Props = {
   agent: AgentState | null;
@@ -77,6 +78,37 @@ export function AgentDetailsPanel({ agent, onDelete, isBusy = false }: Props) {
             ))}
           </ul>
         )}
+      </div>
+
+            <div style={{ marginTop: 16 }}>
+        <GenomeGraph
+          genes={agent.genes.map((gene) => ({
+            id: gene.id,
+            genome_template_id: 0,
+            name: gene.name,
+            effect_type: gene.effect_type,
+            chromosome_id: gene.chromosome_id,
+            position: gene.position,
+            default_active: gene.default_active,
+            threshold: gene.threshold,
+          }))}
+          edges={agent.gene_edges.map((edge, index) => ({
+            id: index + 1,
+            genome_template_id: 0,
+            source_gene_id: edge.source_gene_id,
+            target_gene_id: edge.target_gene_id,
+            weight: edge.weight,
+          }))}
+          geneStates={agent.gene_states.map((state, index) => ({
+            id: index + 1,
+            genome_template_id: 0,
+            gene_id: state.gene_id,
+            effect_type: agent.genes.find((gene) => gene.id === state.gene_id)?.effect_type || "unknown",
+            is_active: state.is_active,
+          }))}
+          width={700}
+          height={320}
+        />
       </div>
 
       <div style={{ marginTop: 16 }}>

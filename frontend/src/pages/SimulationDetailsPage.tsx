@@ -14,7 +14,7 @@ import {
 import type { StepSimulationResponse } from "../api/types";
 import { SimulationControls } from "../components/SimulationControls";
 import { TerritoryGraph } from "../components/TerritoryGraph";
-import { LastStepPanel, type LastStepResult } from "../components/LastStepPanel";
+import LastStepPanel, {type LastStepResult} from "../components/LastStepPanel";
 import { CreateTerritoryForm } from "../components/CreateTerritoryForm";
 import { CreateAgentForm } from "../components/CreateAgentForm";
 import {
@@ -28,6 +28,7 @@ import {
 import { TerritoryDetailsPanel } from "../components/TerritoryDetailsPanel";
 import { EdgeDetailsPanel } from "../components/EdgeDetailsPanel";
 import { AgentDetailsPanel } from "../components/AgentDetailsPanel";
+import { getGenomeTemplates } from "../api/genomeTemplates";
 
 export function SimulationDetailsPage() {
 	const params = useParams();
@@ -53,6 +54,11 @@ export function SimulationDetailsPage() {
 		queryFn: () => getSimulationState(simulationId),
 		enabled: Number.isFinite(simulationId),
 		refetchInterval: 1500,
+	});
+
+	const genomeTemplatesQuery = useQuery({
+		queryKey: ["genome-templates", 1],
+		queryFn: () => getGenomeTemplates(1),
 	});
 
 	const commonOnSuccess = async () => {
@@ -271,6 +277,7 @@ export function SimulationDetailsPage() {
 							/>
 							<CreateAgentForm
 								territories={stateQuery.data.territories}
+								genomeTemplates={genomeTemplatesQuery.data ?? []}
 								onSubmit={(payload) => createAgentMutation.mutate(payload)}
 								isBusy={isBusy}
 							/>

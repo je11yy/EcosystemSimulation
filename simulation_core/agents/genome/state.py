@@ -10,12 +10,12 @@ class GenomeState:
     входных сигналов и связей между генами.
     """
 
-    gene_activity: dict[str, bool] = field(default_factory=lambda: {})  # gene_id -> активен ли ген
+    gene_activity: dict[int, bool] = field(default_factory=lambda: {})  # gene_id -> активен ли ген
 
-    def is_active(self, gene_id: str) -> bool:
+    def is_active(self, gene_id: int) -> bool:
         return self.gene_activity.get(gene_id, False)
 
-    def set_active(self, gene_id: str, value: bool) -> None:
+    def set_active(self, gene_id: int, value: bool) -> None:
         self.gene_activity[gene_id] = value
 
     def copy(self) -> "GenomeState":

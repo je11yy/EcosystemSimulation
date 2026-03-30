@@ -24,6 +24,10 @@ export function SimulationsPage() {
 
   return (
     <div style={{ padding: 24 }}>
+      <div style={{ marginBottom: 16 }}>
+        <Link to="/genome-templates">Перейти к шаблонам генома</Link>
+      </div>
+      
       <h1>Симуляции</h1>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>

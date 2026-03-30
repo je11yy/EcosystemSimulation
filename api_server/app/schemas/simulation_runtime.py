@@ -2,6 +2,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from simulation_core.agents.genome.effect_type import GeneEffectType
+
 
 class RuntimeTerritoryDTO(BaseModel):
     id: str
@@ -25,6 +27,7 @@ class RuntimeGeneDTO(BaseModel):
     chromosome_id: str
     position: float
     default_active: bool
+    effect_type: GeneEffectType
     threshold: float
 
 
@@ -50,6 +53,7 @@ class RuntimeAgentDTO(BaseModel):
     base_defense: int
 
     sex: str
+    species_group: str
     pregnant: bool
     ticks_to_birth: int
     father_id: Optional[str] = None
@@ -61,6 +65,8 @@ class RuntimeAgentDTO(BaseModel):
     genes: list[RuntimeGeneDTO]
     gene_edges: list[RuntimeGeneEdgeDTO]
     gene_states: list[RuntimeGeneStateDTO]
+
+    hunt_cooldown: int = 0
 
 
 class RuntimeConfigDTO(BaseModel):

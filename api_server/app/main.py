@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import app.db.init_models  # type: ignore # noqa: F401
-from app.api.debug import router as debug_router
+from app.api.genome_templates import router as genome_templates_router
 from app.api.health import router as health_router
 from app.api.simulations import router as simulations_router
 from app.core.config import settings
@@ -41,7 +41,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(simulations_router)
-    app.include_router(debug_router)
+    app.include_router(genome_templates_router)
 
     return app
 

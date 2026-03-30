@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from simulation_core.agents.genome.effect_type import GeneEffectType
+from simulation_core.agents.genome.gene import Gene
 from simulation_core.agents.genome.genome import Genome
 from simulation_core.agents.genome.state import GenomeState
 from simulation_core.agents.genome.updater import GenomeContext, GenomeUpdater
@@ -36,7 +38,7 @@ class ThresholdGenomeUpdater(GenomeUpdater):
 
             # 2. вклад среды
             total_input += self._environment_signal(
-                gene_id=gene.id,
+                gene=gene,
                 temperature=territory.temperature,
             )
 
@@ -46,7 +48,7 @@ class ThresholdGenomeUpdater(GenomeUpdater):
 
         return next_state
 
-    def _environment_signal(self, gene_id: str, temperature: float) -> float:
+    def _environment_signal(self, gene: Gene, temperature: float) -> float:
         """Вычисляет внешний сигнал от среды для гена.
 
         Использует простое правило на основе ID гена:
@@ -54,14 +56,10 @@ class ThresholdGenomeUpdater(GenomeUpdater):
         - cold-гены активируются при низкой температуре
         - остальные гены не получают внешнего сигнала
         """
-        gene_id_lower = gene_id.lower()
-
-        if "heat" in gene_id_lower:
-            # чем выше температура, тем сильнее активация heat-генов
+        if gene.effect_type == GeneEffectType.HEAT_RESISTANCE:
             return temperature / 10.0
 
-        if "cold" in gene_id_lower:
-            # чем ниже температура, тем сильнее активация cold-генов
+        if gene.effect_type == GeneEffectType.COLD_RESISTANCE:
             return (30.0 - temperature) / 10.0
 
         return 0.0

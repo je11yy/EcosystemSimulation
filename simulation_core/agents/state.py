@@ -25,8 +25,12 @@ class IndividualState:
     ticks_to_birth: int = 0  # Тиков до рождения ребенка
     father_id: Optional[IndividualId] = None  # ID отца
 
+    hunt_cooldown: int = 0
+
     base_temp_pref: float = 20.0  # Предпочитаемая температура
     satisfaction: float = 1.0  # Уровень удовлетворенности (для будущих механик)
+
+    species_group: str = "default"  # Группа вида (для разных видов с разными шаблонами генома)
 
     alive: bool = True  # Жив ли агент
 

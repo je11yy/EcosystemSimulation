@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class AgentCreate(BaseModel):
     territory_id: int
+    genome_template_id: int
 
     hunger: int = Field(ge=0, le=5, default=0)
     hp: int = Field(ge=0, le=5, default=5)

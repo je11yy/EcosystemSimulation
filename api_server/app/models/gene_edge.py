@@ -8,14 +8,15 @@ class GeneEdge(Base):
     __tablename__ = "gene_edges"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    agent_id: Mapped[int] = mapped_column(
+    agent_id: Mapped[str] = mapped_column(
+        String(64),
         ForeignKey("agents.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
     )
 
-    source_gene_key: Mapped[str] = mapped_column(String(128), nullable=False)
-    target_gene_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_gene_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_gene_id: Mapped[str] = mapped_column(String(64), nullable=False)
 
     weight: Mapped[float] = mapped_column(Float, nullable=False)
 

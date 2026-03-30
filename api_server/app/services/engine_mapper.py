@@ -46,15 +46,18 @@ class EngineMapper:
                     base_strength=agent.base_strength,
                     base_defense=agent.base_defense,
                     sex=agent.sex,
+                    species_group=agent.species_group,
                     pregnant=agent.pregnant,
                     ticks_to_birth=agent.ticks_to_birth,
+                    hunt_cooldown=agent.hunt_cooldown,
                     father_id=str(agent.father_id) if agent.father_id is not None else None,
                     base_temp_pref=agent.base_temp_pref,
                     satisfaction=agent.satisfaction,
                     alive=agent.alive,
                     genes=[
                         RuntimeGeneDTO(
-                            id=gene.gene_key,
+                            id=str(gene.id),
+                            effect_type=gene.effect_type.value,
                             name=gene.name,
                             chromosome_id=gene.chromosome_id,
                             position=gene.position,
@@ -65,15 +68,15 @@ class EngineMapper:
                     ],
                     gene_edges=[
                         RuntimeGeneEdgeDTO(
-                            source_gene_id=edge.source_gene_key,
-                            target_gene_id=edge.target_gene_key,
+                            source_gene_id=str(edge.source_gene_id),
+                            target_gene_id=str(edge.target_gene_id),
                             weight=edge.weight,
                         )
                         for edge in agent.gene_edges
                     ],
                     gene_states=[
                         RuntimeGeneStateDTO(
-                            gene_id=gene_state.gene_key,
+                            gene_id=str(gene_state.gene_id),
                             is_active=gene_state.is_active,
                         )
                         for gene_state in agent.gene_states

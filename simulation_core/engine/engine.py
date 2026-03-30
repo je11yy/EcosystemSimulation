@@ -3,14 +3,15 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Literal, Optional
 
-from simulation_core.agents.actions import ActionOption
+from simulation_core.agents.actions import ActionOption, ActionType
 from simulation_core.agents.genome import GenomeContext, GenomeUpdater
 from simulation_core.agents.genome.child_builder import ChildGenomeBuilder
 from simulation_core.agents.genome.edge import GeneEdge
+from simulation_core.agents.genome.effect_type import GeneEffectType
 from simulation_core.agents.genome.effects import GenomeEffectsResolver
 from simulation_core.agents.genome.gene import Gene
 from simulation_core.agents.genome.genome import Genome
-from simulation_core.agents.observation import Observation
+from simulation_core.agents.observation import Observation, ObservedIndividual, ObservedTerritory
 from simulation_core.agents.phenotype import PhenotypeSnapshot
 from simulation_core.agents.registry import Agent, AgentRegistry
 from simulation_core.agents.state import IndividualState
@@ -31,7 +32,7 @@ from simulation_core.dto import (
 )
 from simulation_core.engine.applier import ActionApplier, AppliedActionResult
 from simulation_core.engine.conflict_resolver import ConflictResolver
-from simulation_core.types import IndividualId, Tick
+from simulation_core.types import IndividualId, TerritoryId, Tick
 from simulation_core.world.api import WorldReadAPI
 from simulation_core.world.simple_food_diffusion import SimpleFoodDiffusionModel
 
@@ -40,27 +41,27 @@ from simulation_core.world.simple_food_diffusion import SimpleFoodDiffusionModel
 class Decision:
     """Решение агента на данном тике симуляции."""
 
-    tick: Tick  # Номер тика, на котором было принято решение
-    agent_id: str  # Идентификатор агента, принявшего решение
-    chosen: ActionOption  # Выбранное действие агента
+    tick: Tick
+    agent_id: str
+    chosen: ActionOption
 
 
 @dataclass(frozen=True)
 class DeathResult:
     """Результат смерти агента."""
 
-    agent_id: str  # Идентификатор умершего агента
-    reason: str  # Причина смерти (например, "starvation" - голод)
-    tick: Tick  # Тик, на котором произошла смерть
+    agent_id: str
+    reason: str
+    tick: Tick
 
 
 @dataclass(frozen=True)
 class BirthResult:
     """Результат рождения нового агента."""
 
-    parent_id: str  # Идентификатор родителя
-    child_id: str  # Идентификатор новорожденного агента
-    tick: Tick  # Тик, на котором произошло рождение
+    parent_id: str
+    child_id: str
+    tick: Tick
 
 
 @dataclass(frozen=True)
@@ -72,25 +73,72 @@ class FightEvent:
 
 
 @dataclass(frozen=True)
+class HuntEvent:
+    territory_id: str
+    hunter_id: str
+    target_id: str
+    success: bool
+    damage_to_target: int
+    damage_to_hunter: int
+    target_died: bool
+    hunter_died: bool
+    hunger_restored: int
+
+
+@dataclass(frozen=True)
+class StepMetrics:
+    alive_population: int
+    population_by_species_group: dict[str, int]
+    avg_hunger_alive: float
+    avg_hp_alive: float
+    avg_hunt_cooldown_alive: float
+    occupancy_by_territory: dict[str, int]
+    action_counts: dict[str, int]
+    successful_hunts: int
+    births_count: int
+    deaths_count: int
+    deaths_by_reason: dict[str, int]
+
+
+@dataclass(frozen=True)
+class MetricsHistoryPoint:
+    tick: int
+    alive_population: int
+    avg_hunger_alive: float
+    avg_hp_alive: float
+    avg_hunt_cooldown_alive: float
+    successful_hunts: int
+    births_count: int
+    deaths_count: int
+    population_by_species_group: dict[str, int]
+    occupancy_by_territory: dict[str, int]
+    action_counts: dict[str, int]
+    deaths_by_reason: dict[str, int]
+
+
+@dataclass(frozen=True)
 class StepResult:
     """Результат одного шага симуляции."""
 
-    tick: Tick  # Номер тика
-    decisions: list[Decision]  # Список решений всех агентов на этом тике
-    applied_results: list[AppliedActionResult]  # Результаты применения действий
-    deaths: list[DeathResult]  # Список смертей на этом тике
-    births: list[BirthResult]  # Список рождений на этом тике
+    tick: Tick
+    decisions: list[Decision]
+    applied_results: list[AppliedActionResult]
+    deaths: list[DeathResult]
+    births: list[BirthResult]
     fights: list[FightEvent]
+    hunts: list[HuntEvent]
+    metrics: StepMetrics
+    metrics_history: list[MetricsHistoryPoint]
 
 
 @dataclass(frozen=True)
 class CommandResult:
     """Результат выполнения команды."""
 
-    success: bool  # Успешно ли выполнена команда
-    command_type: str  # Тип команды (например, "StepCommand")
-    reason: Optional[str] = None  # Причина неудачи, если команда не удалась
-    step_result: Optional[StepResult] = None  # Результат шага, если команда была StepCommand
+    success: bool
+    command_type: str
+    reason: Optional[str] = None
+    step_result: Optional[StepResult] = None
 
 
 class SimulationEngine:
@@ -102,45 +150,75 @@ class SimulationEngine:
 
     def __init__(
         self,
-        cfg: SimConfig,  # Конфигурация симуляции с параметрами
-        world: WorldReadAPI,  # API для чтения состояния мира
-        genome_updater: GenomeUpdater,  # Обновлятор состояний геномов
-        child_genome_builder: ChildGenomeBuilder,  # Компонент для создания генома ребенка
-        genome_effects_resolver: GenomeEffectsResolver,  # Компонент для разрешения эффектов генов
-        food_diffusion_model: SimpleFoodDiffusionModel,  # Модель диффузии еды
-        seed: int = 0,  # Seed для генератора случайных чисел
+        cfg: SimConfig,
+        world: WorldReadAPI,
+        genome_updater: GenomeUpdater,
+        child_genome_builder: ChildGenomeBuilder,
+        genome_effects_resolver: GenomeEffectsResolver,
+        food_diffusion_model: SimpleFoodDiffusionModel,
+        seed: int = 0,
     ) -> None:
-        self.cfg = cfg  # Конфигурация симуляции
-        self.world = world  # Доступ к миру
-        self.genome_updater = genome_updater  # Обновлятор геномов
-        self.child_genome_builder = child_genome_builder  # Компонент для создания генома ребенка
-        self.genome_effects_resolver = genome_effects_resolver  # Компонент для разрешения эффектов
-        self.rng = random.Random(seed)  # Генератор случайных чисел
-        self.tick: Tick = Tick(0)  # Текущий тик симуляции
-        self.agents = AgentRegistry()  # Реестр всех агентов
-        self.applier = ActionApplier()  # Применятель действий
+        self.cfg = cfg
+        self.world = world
+        self.genome_updater = genome_updater
+        self.child_genome_builder = child_genome_builder
+        self.genome_effects_resolver = genome_effects_resolver
+        self.rng = random.Random(seed)
+        self.tick: Tick = Tick(0)
+        self.agents = AgentRegistry()
+        self.applier = ActionApplier()
         self.conflict_resolver = ConflictResolver()
         self.food_diffusion_model = food_diffusion_model
+        self.metrics_history: list[MetricsHistoryPoint] = []
 
     def add_agent(self, agent: Agent) -> None:
         agent.state.validate(self.cfg)
         self.agents.add(agent)
 
     def build_observation(self, agent: Agent) -> Observation:
-        """Строит наблюдение для агента на основе текущего состояния мира.
-
-        Собирает информацию о текущей территории, других агентах на ней
-        и соседних территориях.
-        """
         current_id = agent.state.location
 
-        individuals_here = [
-            other.state.id
-            for other in self.agents.all()
-            if other.state.location == current_id and other.state.id != agent.state.id
-        ]
+        individuals_here = []
+        for other in self.agents.all():
+            if other.state.location != current_id or other.state.id == agent.state.id:
+                continue
 
-        neighbor_territories = [edge.to for edge in self.world.graph().neighbors(current_id)]
+            phenotype = self.build_phenotype(other)
+
+            individuals_here.append(
+                ObservedIndividual(
+                    id=other.state.id,
+                    sex=other.state.sex,
+                    species_group=other.state.species_group,
+                    hunger=other.state.hunger,
+                    alive=other.state.alive,
+                    effective_strength=phenotype.strength,
+                    effective_defense=phenotype.defense,
+                    effective_temp_pref=phenotype.temp_pref,
+                )
+            )
+
+        occupant_count_by_territory: dict[TerritoryId, int] = {}
+        for other in self.agents.all():
+            if not other.state.alive:
+                continue
+            occupant_count_by_territory[other.state.location] = (
+                occupant_count_by_territory.get(other.state.location, 0) + 1
+            )
+
+        neighbor_territories = []
+        for edge in self.world.graph().neighbors(current_id):
+            territory = self.world.get_territory(edge.to)
+            neighbor_territories.append(
+                ObservedTerritory(
+                    id=territory.id,
+                    food=territory.food,
+                    food_capacity=territory.food_capacity,
+                    temperature=territory.temperature,
+                    movement_cost=edge.cost,
+                    occupant_count=occupant_count_by_territory.get(territory.id, 0),
+                )
+            )
 
         return Observation(
             current_id=current_id,
@@ -149,11 +227,6 @@ class SimulationEngine:
         )
 
     def update_agent_genome(self, agent: Agent) -> None:
-        """Обновляет состояние генома агента на основе текущего контекста.
-
-        Использует genome_updater для перехода генома в новое состояние
-        в зависимости от территории и мира.
-        """
         context = GenomeContext(
             territory_id=agent.state.location,
         )
@@ -165,25 +238,32 @@ class SimulationEngine:
             world=self.world,
         )
 
-    def apply_tick_hunger(
+    def apply_hunger_accounting(
         self,
         applied_results: list[AppliedActionResult],
     ) -> None:
-        """Применяет голод за тик ко всем агентам, которые не поели успешно.
-
-        Увеличивает уровень голода у агентов, чьи действия по поеданию еды
-        не увенчались успехом.
-        """
-        ate_successfully = {
-            result.agent_id for result in applied_results if result.consumed_food and result.success
-        }
+        result_by_agent_id = {result.agent_id: result for result in applied_results}
 
         for agent in self.agents.all():
-            if str(agent.state.id) not in ate_successfully:
-                agent.state.increase_hunger(1, self.cfg)
+            if not agent.state.alive:
+                continue
+
+            basal_cost = 1
+            action_cost_or_gain = 0
+            pregnancy_cost = 1 if agent.state.pregnant else 0
+
+            result = result_by_agent_id.get(str(agent.state.id))
+            if result is not None:
+                action_cost_or_gain = result.hunger_delta
+
+            net_delta = basal_cost + action_cost_or_gain + pregnancy_cost
+
+            if net_delta > 0:
+                agent.state.increase_hunger(net_delta, self.cfg)
+            elif net_delta < 0:
+                agent.state.decrease_hunger(-net_delta, self.cfg)
 
     def regenerate_territories(self) -> None:
-        """Регенерирует еду на всех территориях мира."""
         for territory in self.world.all_territories():
             territory.regenerate_food()
         self.food_diffusion_model.diffuse(self.world)
@@ -222,6 +302,7 @@ class SimulationEngine:
                 AgentGeneDTO(
                     id=gene.id,
                     name=gene.name,
+                    effect_type=gene.effect_type,
                     chromosome_id=gene.chromosome_id,
                     position=gene.position,
                     default_active=gene.default_active,
@@ -232,8 +313,8 @@ class SimulationEngine:
 
             gene_edges = [
                 AgentGeneEdgeDTO(
-                    source_gene_id=edge.source_gene_id,
-                    target_gene_id=edge.target_gene_id,
+                    source_gene_id=str(edge.source_gene_id),
+                    target_gene_id=str(edge.target_gene_id),
                     weight=edge.weight,
                 )
                 for edge in agent.genome.edges
@@ -256,8 +337,14 @@ class SimulationEngine:
                     base_strength=agent.state.base_strength,
                     effective_strength=effective_strength,
                     base_defense=agent.state.base_defense,
+                    hunt_cooldown=agent.state.hunt_cooldown,
                     effective_defense=effective_defense,
                     sex=agent.state.sex,
+                    species_group=(
+                        agent.state.species_group
+                        if hasattr(agent.state, "species_group")
+                        else "default"
+                    ),
                     pregnant=agent.state.pregnant,
                     ticks_to_birth=agent.state.ticks_to_birth,
                     father_id=(
@@ -277,7 +364,6 @@ class SimulationEngine:
         return agents
 
     def get_state(self) -> SimulationStateDTO:
-        """Получает текущее состояние всей симуляции."""
         return SimulationStateDTO(
             tick=int(self.tick),
             territories=self.build_territory_dtos(),
@@ -288,11 +374,14 @@ class SimulationEngine:
         decisions: List[Decision] = []
         applied_results: List[AppliedActionResult] = []
         fights: list[FightEvent] = []
+        hunts: list[HuntEvent] = []
 
         decisions_buffer: list[tuple[Agent, ActionOption, PhenotypeSnapshot]] = []
 
-        # 1. Решения агентов
         for agent in self.agents.all():
+            if not agent.state.alive:
+                continue
+
             self.update_agent_genome(agent)
             obs = self.build_observation(agent)
             phenotype = self.build_phenotype(agent)
@@ -317,13 +406,23 @@ class SimulationEngine:
             )
             decisions_buffer.append((agent, chosen, phenotype))
 
-        # 2. Сначала применяем не-EAT действия
         eat_claims_by_territory: dict[str, list[tuple[Agent, PhenotypeSnapshot]]] = defaultdict(
             list
         )
 
         for agent, action, phenotype in decisions_buffer:
-            if action.type.value == "eat":
+            if not agent.state.alive:
+                applied_results.append(
+                    AppliedActionResult(
+                        agent_id=str(agent.state.id),
+                        action_type=action.type.value,
+                        success=False,
+                        reason="Agent died before action resolution",
+                    )
+                )
+                continue
+
+            if action.type == ActionType.EAT:
                 eat_claims_by_territory[str(agent.state.location)].append((agent, phenotype))
                 continue
 
@@ -333,24 +432,68 @@ class SimulationEngine:
                 world=self.world,
                 agents=self.agents,
                 cfg=self.cfg,
+                rng=self.rng,
+                actor_phenotype=phenotype,
+                phenotype_provider=self.build_phenotype,
             )
             applied_results.append(result)
 
-        # 3. Потом отдельно разрешаем EAT-конфликты
-        for territory_id, contenders in eat_claims_by_territory.items():
-            if len(contenders) == 1:
-                winner = contenders[0][0]
-                result = self.applier.apply_successful_eat(
-                    agent=winner,
-                    world=self.world,
-                    cfg=self.cfg,
+            if action.type == ActionType.HUNT and action.target_id is not None:
+                target_id = result.target_id or (
+                    str(action.target_id) if action.target_id is not None else "unknown"
                 )
-                applied_results.append(result)
+
+                hunts.append(
+                    HuntEvent(
+                        territory_id=str(agent.state.location),
+                        hunter_id=str(agent.state.id),
+                        target_id=target_id,
+                        success=result.success,
+                        damage_to_target=result.damage_to_target,
+                        damage_to_hunter=result.hp_loss,
+                        target_died=result.target_died,
+                        hunter_died=result.hunter_died,
+                        hunger_restored=result.hunger_restored,
+                    )
+                )
+
+        for territory_id, contenders in eat_claims_by_territory.items():
+            alive_contenders = [
+                (agent, phenotype) for agent, phenotype in contenders if agent.state.alive
+            ]
+
+            if not alive_contenders:
+                continue
+
+            territory = self.world.get_territory(TerritoryId(territory_id))
+            available_food_units = int(territory.food)
+
+            if available_food_units <= 0:
+                for agent, _phenotype in alive_contenders:
+                    applied_results.append(
+                        AppliedActionResult(
+                            agent_id=str(agent.state.id),
+                            action_type=ActionType.EAT.value,
+                            success=False,
+                            reason="No food available on territory",
+                            consumed_food=False,
+                        )
+                    )
+                continue
+
+            if available_food_units >= len(alive_contenders):
+                for agent, _phenotype in alive_contenders:
+                    result = self.applier.apply_successful_eat(
+                        agent=agent,
+                        world=self.world,
+                        cfg=self.cfg,
+                    )
+                    applied_results.append(result)
                 continue
 
             winner, fight_results = self.conflict_resolver.resolve_food_conflict(
                 territory_id=territory_id,
-                contenders=contenders,
+                contenders=alive_contenders,
                 rng=self.rng,
                 cfg=self.cfg,
             )
@@ -380,22 +523,30 @@ class SimulationEngine:
             )
             applied_results.append(eat_result)
 
-        # 4. Обновление голода
-        self.apply_tick_hunger(applied_results)
-
-        # 5. Регенерация еды
-        self.regenerate_territories()
-
-        # 6. Рождения
-        births = self.resolve_births()
-
-        # 7. Смерти от голода
-        starvation_deaths = self.apply_starvation_damage()
-
-        # 7. Смерти от боев
         combat_deaths = self.resolve_hp_deaths()
 
+        self.apply_hunger_accounting(applied_results)
+        self.regenerate_territories()
+
+        births = self.resolve_births()
+        starvation_deaths = self.apply_starvation_damage()
+        self.decay_hunt_cooldowns()
+
         deaths = combat_deaths + starvation_deaths
+
+        metrics = self._collect_step_metrics(
+            decisions=decisions,
+            applied_results=applied_results,
+            deaths=deaths,
+            births=births,
+            hunts=hunts,
+        )
+
+        history_point = self._make_metrics_history_point(
+            tick=self.tick,
+            metrics=metrics,
+        )
+        self.metrics_history.append(history_point)
 
         result = StepResult(
             tick=self.tick,
@@ -404,6 +555,9 @@ class SimulationEngine:
             deaths=deaths,
             births=births,
             fights=fights,
+            hunts=hunts,
+            metrics=metrics,
+            metrics_history=list(self.metrics_history),
         )
 
         self.tick = Tick(int(self.tick) + 1)
@@ -444,7 +598,6 @@ class SimulationEngine:
         )
 
     def handle_commands(self, commands: list[Command]) -> list[CommandResult]:
-        """Обрабатывает список команд симуляции."""
         results: list[CommandResult] = []
         for command in commands:
             results.append(self.handle_command(command))
@@ -454,11 +607,6 @@ class SimulationEngine:
         return IndividualId(f"child_{int(self.tick)}_{self.rng.randint(1000, 9999)}")
 
     def resolve_births(self) -> list[BirthResult]:
-        """Обрабатывает рождения новых агентов.
-
-        Проверяет беременных агентов, уменьшает счетчик до рождения,
-        и создает новых агентов при достижении 0.
-        """
         births: list[BirthResult] = []
         new_agents: list[Agent] = []
 
@@ -519,7 +667,9 @@ class SimulationEngine:
                 base_strength=child_strength,
                 base_defense=child_defense,
                 sex=child_sex,
+                species_group=mother.state.species_group,
                 base_temp_pref=child_temp_pref,
+                hunt_cooldown=0,
             )
 
             child_agent = Agent(
@@ -538,7 +688,7 @@ class SimulationEngine:
             births.append(
                 BirthResult(
                     parent_id=str(mother.state.id),
-                    child_id=child_id,
+                    child_id=str(child_id),
                     tick=self.tick,
                 )
             )
@@ -553,8 +703,9 @@ class SimulationEngine:
 
         genome.add_gene(
             Gene(
-                id="g_hunger_drive",
+                id=1,
                 name="Hunger drive",
+                effect_type=GeneEffectType.HUNGER_DRIVE,
                 chromosome_id="chr1",
                 position=1.0,
                 threshold=0.2,
@@ -562,8 +713,9 @@ class SimulationEngine:
         )
         genome.add_gene(
             Gene(
-                id="g_risk_move",
+                id=2,
                 name="Risk movement",
+                effect_type=GeneEffectType.RISK_MOVE,
                 chromosome_id="chr1",
                 position=2.0,
                 threshold=0.0,
@@ -571,8 +723,9 @@ class SimulationEngine:
         )
         genome.add_gene(
             Gene(
-                id="g_low_activity",
+                id=3,
                 name="Low activity",
+                effect_type=GeneEffectType.LOW_ACTIVITY,
                 chromosome_id="chr1",
                 position=3.0,
                 threshold=0.3,
@@ -580,8 +733,9 @@ class SimulationEngine:
         )
         genome.add_gene(
             Gene(
-                id="g_heat_resistance",
+                id=4,
                 name="Heat resistance",
+                effect_type=GeneEffectType.HEAT_RESISTANCE,
                 chromosome_id="chr2",
                 position=1.0,
                 threshold=0.0,
@@ -589,8 +743,9 @@ class SimulationEngine:
         )
         genome.add_gene(
             Gene(
-                id="g_cold_resistance",
+                id=5,
                 name="Cold resistance",
+                effect_type=GeneEffectType.COLD_RESISTANCE,
                 chromosome_id="chr2",
                 position=2.0,
                 threshold=0.0,
@@ -598,8 +753,9 @@ class SimulationEngine:
         )
         genome.add_gene(
             Gene(
-                id="g_reproduction_drive",
+                id=6,
                 name="Reproduction drive",
+                effect_type=GeneEffectType.REPRODUCTION_DRIVE,
                 chromosome_id="chr2",
                 position=3.0,
                 threshold=0.1,
@@ -608,8 +764,8 @@ class SimulationEngine:
 
         genome.add_edge(
             GeneEdge(
-                source_gene_id="g_hunger_drive",
-                target_gene_id="g_risk_move",
+                source_gene_id=1,
+                target_gene_id=2,
                 weight=0.4,
             )
         )
@@ -677,10 +833,16 @@ class SimulationEngine:
         to_remove: list[IndividualId] = []
 
         for agent in self.agents.all():
-            if agent.state.hunger >= self.cfg.hunger_max:
-                agent.state.decrease_hp(1, self.cfg)
+            if not agent.state.alive:
+                continue
 
-            if not agent.state.alive or agent.state.hp <= self.cfg.hp_min:
+            if agent.state.hunger < self.cfg.hunger_max:
+                continue
+
+            hp_before = agent.state.hp
+            agent.state.decrease_hp(1, self.cfg)
+
+            if hp_before > self.cfg.hp_min and agent.state.hp <= self.cfg.hp_min:
                 agent.state.alive = False
                 deaths.append(
                     DeathResult(
@@ -692,6 +854,100 @@ class SimulationEngine:
                 to_remove.append(agent.state.id)
 
         for agent_id in to_remove:
-            self.agents.remove(agent_id)
+            if any(str(a.state.id) == str(agent_id) for a in self.agents.all()):
+                self.agents.remove(agent_id)
 
         return deaths
+
+    def decay_hunt_cooldowns(self) -> None:
+        for agent in self.agents.all():
+            if not agent.state.alive:
+                continue
+
+            if agent.state.hunt_cooldown > 0:
+                agent.state.hunt_cooldown -= 1
+
+    def _collect_step_metrics(
+        self,
+        decisions: list[Decision],
+        applied_results: list[AppliedActionResult],
+        deaths: list[DeathResult],
+        births: list[BirthResult],
+        hunts: list[HuntEvent],
+    ) -> StepMetrics:
+        alive_agents = [agent for agent in self.agents.all() if agent.state.alive]
+
+        population_by_species_group: dict[str, int] = {}
+        for agent in alive_agents:
+            species_group = agent.state.species_group
+            population_by_species_group[species_group] = (
+                population_by_species_group.get(species_group, 0) + 1
+            )
+
+        occupancy_by_territory: dict[str, int] = {}
+        for agent in alive_agents:
+            territory_id = str(agent.state.location)
+            occupancy_by_territory[territory_id] = occupancy_by_territory.get(territory_id, 0) + 1
+
+        action_counts: dict[str, int] = {}
+        for decision in decisions:
+            action_type = decision.chosen.type.value
+            action_counts[action_type] = action_counts.get(action_type, 0) + 1
+
+        deaths_by_reason: dict[str, int] = {}
+        for death in deaths:
+            deaths_by_reason[death.reason] = deaths_by_reason.get(death.reason, 0) + 1
+
+        alive_population = len(alive_agents)
+
+        avg_hunger_alive = (
+            sum(agent.state.hunger for agent in alive_agents) / alive_population
+            if alive_population > 0
+            else 0.0
+        )
+        avg_hp_alive = (
+            sum(agent.state.hp for agent in alive_agents) / alive_population
+            if alive_population > 0
+            else 0.0
+        )
+        avg_hunt_cooldown_alive = (
+            sum(agent.state.hunt_cooldown for agent in alive_agents) / alive_population
+            if alive_population > 0
+            else 0.0
+        )
+
+        successful_hunts = sum(1 for hunt in hunts if hunt.success)
+
+        return StepMetrics(
+            alive_population=alive_population,
+            population_by_species_group=population_by_species_group,
+            avg_hunger_alive=avg_hunger_alive,
+            avg_hp_alive=avg_hp_alive,
+            avg_hunt_cooldown_alive=avg_hunt_cooldown_alive,
+            occupancy_by_territory=occupancy_by_territory,
+            action_counts=action_counts,
+            successful_hunts=successful_hunts,
+            births_count=len(births),
+            deaths_count=len(deaths),
+            deaths_by_reason=deaths_by_reason,
+        )
+
+    def _make_metrics_history_point(
+        self,
+        tick: Tick,
+        metrics: StepMetrics,
+    ) -> MetricsHistoryPoint:
+        return MetricsHistoryPoint(
+            tick=int(tick),
+            alive_population=metrics.alive_population,
+            avg_hunger_alive=metrics.avg_hunger_alive,
+            avg_hp_alive=metrics.avg_hp_alive,
+            avg_hunt_cooldown_alive=metrics.avg_hunt_cooldown_alive,
+            successful_hunts=metrics.successful_hunts,
+            births_count=metrics.births_count,
+            deaths_count=metrics.deaths_count,
+            population_by_species_group=dict(metrics.population_by_species_group),
+            occupancy_by_territory=dict(metrics.occupancy_by_territory),
+            action_counts=dict(metrics.action_counts),
+            deaths_by_reason=dict(metrics.deaths_by_reason),
+        )

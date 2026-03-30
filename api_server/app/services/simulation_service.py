@@ -1,14 +1,21 @@
+import uuid
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.agent import Agent
+from app.models.gene import Gene
+from app.models.gene_edge import GeneEdge
+from app.models.gene_state import GeneState
+from app.models.genome_template import GenomeTemplate
 from app.models.simulation import Simulation
 from app.models.territory import Territory
 from app.models.territory_edge import TerritoryEdge
+from app.repositories.genome_template_repository import GenomeTemplateRepository
 from app.repositories.simulation_repository import SimulationRepository
 from app.schemas.agent import AgentCreate
 from app.schemas.territory import TerritoryCreate, TerritoryUpdate
 from app.schemas.territory_edge import TerritoryEdgeCreate
-from app.services.default_genome_factory import DefaultGenomeFactory
 from app.services.engine_mapper import EngineMapper
 
 
@@ -69,7 +76,21 @@ class SimulationService:
         if payload.territory_id not in territory_ids:
             return None, "territory_not_found"
 
+        stmt = select(GenomeTemplate).where(GenomeTemplate.id == payload.genome_template_id)
+        result = await self.db.execute(stmt)
+        genome_template = result.scalar_one_or_none()
+
+        if genome_template is None:
+            return None, "genome_template_not_found"
+
+        genome_template = await GenomeTemplateRepository(self.db).get_full_by_id(
+            payload.genome_template_id
+        )
+        if genome_template is None:
+            return None, "genome_template_not_found"
+
         agent = Agent(
+            id=str(uuid.uuid4()),
             simulation_id=simulation_id,
             territory_id=payload.territory_id,
             hunger=payload.hunger,
@@ -77,8 +98,10 @@ class SimulationService:
             base_strength=payload.base_strength,
             base_defense=payload.base_defense,
             sex=payload.sex,
+            species_group=genome_template.species_group,
             pregnant=payload.pregnant,
             ticks_to_birth=payload.ticks_to_birth,
+            hunt_cooldown=payload.hunt_cooldown,
             father_id=payload.father_id,
             base_temp_pref=payload.base_temp_pref,
             satisfaction=payload.satisfaction,
@@ -87,12 +110,63 @@ class SimulationService:
         self.db.add(agent)
         await self.db.flush()
 
-        genome_factory = DefaultGenomeFactory()
-        genes, gene_edges, gene_states = genome_factory.build_for_agent(agent.id)
+        gene_id_map: dict[int, int] = {}
+        effect_type_to_agent_gene_id: dict[str, int] = {}
 
-        self.db.add_all(genes)
-        self.db.add_all(gene_edges)
-        self.db.add_all(gene_states)
+        for template_gene in genome_template.genes:
+            agent_gene = Gene(
+                agent_id=agent.id,
+                name=template_gene.name,
+                effect_type=template_gene.effect_type,
+                chromosome_id=template_gene.chromosome_id,
+                position=template_gene.position,
+                default_active=template_gene.default_active,
+                threshold=template_gene.threshold,
+            )
+
+            self.db.add(agent_gene)
+            await self.db.flush()
+
+            gene_id_map[template_gene.id] = agent_gene.id
+            effect_type_to_agent_gene_id[str(template_gene.effect_type)] = agent_gene.id
+
+        for template_edge in genome_template.edges:
+            source_gene_id = gene_id_map.get(template_edge.source_gene_id)
+            target_gene_id = gene_id_map.get(template_edge.target_gene_id)
+
+            if source_gene_id is None or target_gene_id is None:
+                continue
+
+            self.db.add(
+                GeneEdge(
+                    agent_id=agent.id,
+                    source_gene_id=source_gene_id,
+                    target_gene_id=target_gene_id,
+                    weight=template_edge.weight,
+                )
+            )
+
+        for template_state in genome_template.gene_states:
+            mapped_gene_id = None
+
+            if template_state.gene_id is not None:
+                mapped_gene_id = gene_id_map.get(template_state.gene_id)
+
+            if mapped_gene_id is None and hasattr(template_state, "effect_type"):
+                effect_type = getattr(template_state, "effect_type", None)
+                if effect_type is not None:
+                    mapped_gene_id = effect_type_to_agent_gene_id.get(str(effect_type))
+
+            if mapped_gene_id is None:
+                continue
+
+            self.db.add(
+                GeneState(
+                    agent_id=agent.id,
+                    gene_id=str(mapped_gene_id),
+                    is_active=template_state.is_active,
+                )
+            )
 
         await self.db.commit()
         await self.db.refresh(agent)

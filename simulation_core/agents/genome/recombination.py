@@ -25,10 +25,9 @@ class SingleCrossoverRecombinationModel(RecombinationModel):
     - до неё гены берутся от одного родителя
     - после неё от другого
 
-    Предполагается, что:
-    - у родителей одинаковый набор gene_id
-    - gene_id совпадает между родителями
-    - chromosome_id и порядок gene_id сопоставимы
+    ВАЖНО:
+    Сопоставление локусов идёт НЕ по gene.id, а по структурной позиции гена
+    на хромосоме: effect_type + chromosome_id + position.
     """
 
     inherit_shared_edges_probability: float = 1.0
@@ -42,9 +41,10 @@ class SingleCrossoverRecombinationModel(RecombinationModel):
     ) -> Genome:
         child = Genome()
 
-        inherited_gene_ids: set[str] = set()
-
         chromosome_ids = sorted(set(parent_a.chromosome_ids()) | set(parent_b.chromosome_ids()))
+        next_gene_id = 1
+
+        locus_id_map: dict[tuple, str] = {}
 
         for chromosome_id in chromosome_ids:
             a_genes = parent_a.genes_on_chromosome(chromosome_id)
@@ -58,25 +58,30 @@ class SingleCrossoverRecombinationModel(RecombinationModel):
                     f"Chromosome '{chromosome_id}' has different gene counts in parents"
                 )
 
-            if [g.id for g in a_genes] != [g.id for g in b_genes]:
+            a_loci = [self._gene_locus_key(gene) for gene in a_genes]
+            b_loci = [self._gene_locus_key(gene) for gene in b_genes]
+
+            if a_loci != b_loci:
                 raise ValueError(
-                    f"Chromosome '{chromosome_id}' has different gene order in parents"
+                    f"Chromosome '{chromosome_id}' has different locus order in parents"
                 )
 
             inherited_genes = self._recombine_chromosome(
                 genes_a=a_genes,
                 genes_b=b_genes,
                 rng=rng,
+                next_gene_id=next_gene_id,
             )
 
-            for gene in inherited_genes:
+            for locus_key, gene in inherited_genes:
                 child.add_gene(gene)
-                inherited_gene_ids.add(gene.id)
+                locus_id_map[locus_key] = str(gene.id)
+                next_gene_id += 1
 
         inherited_edges = self._inherit_edges(
             parent_a=parent_a,
             parent_b=parent_b,
-            inherited_gene_ids=inherited_gene_ids,
+            locus_id_map=locus_id_map,
             rng=rng,
         )
 
@@ -90,11 +95,8 @@ class SingleCrossoverRecombinationModel(RecombinationModel):
         genes_a: list[Gene],
         genes_b: list[Gene],
         rng: random.Random,
-    ) -> list[Gene]:
-        """
-        Возвращает список генов ребёнка для одной хромосомы.
-        """
-
+        next_gene_id: int,
+    ) -> list[tuple[tuple, Gene]]:
         if len(genes_a) != len(genes_b):
             raise ValueError("Parents must have the same number of genes on chromosome")
 
@@ -104,16 +106,16 @@ class SingleCrossoverRecombinationModel(RecombinationModel):
             return []
 
         if n == 1:
-            return [rng.choice([genes_a[0], genes_b[0]])]
+            chosen = rng.choice([genes_a[0], genes_b[0]])
+            locus_key = self._gene_locus_key(chosen)
+            return [(locus_key, self._clone_gene_with_new_id(chosen, next_gene_id))]
 
         start_with_a = rng.choice([True, False])
-
-        # crossover_index означает:
-        # гены с индексом < crossover_index берём от первого выбранного родителя
-        # остальные — от второго
         crossover_index = rng.randint(1, n - 1)
 
-        child_genes: list[Gene] = []
+        child_genes: list[tuple[tuple, Gene]] = []
+
+        current_gene_id = next_gene_id
 
         for idx in range(n):
             if idx < crossover_index:
@@ -121,7 +123,10 @@ class SingleCrossoverRecombinationModel(RecombinationModel):
             else:
                 chosen_gene = genes_b[idx] if start_with_a else genes_a[idx]
 
-            child_genes.append(chosen_gene)
+            locus_key = self._gene_locus_key(chosen_gene)
+            cloned_gene = self._clone_gene_with_new_id(chosen_gene, current_gene_id)
+            child_genes.append((locus_key, cloned_gene))
+            current_gene_id += 1
 
         return child_genes
 
@@ -129,28 +134,11 @@ class SingleCrossoverRecombinationModel(RecombinationModel):
         self,
         parent_a: Genome,
         parent_b: Genome,
-        inherited_gene_ids: set[str],
+        locus_id_map: dict[tuple, str],
         rng: random.Random,
     ) -> list[GeneEdge]:
-        """
-        Наследование регуляторных рёбер:
-        - если ребро есть у обоих родителей, почти всегда сохраняем
-        - если только у одного, сохраняем вероятностно
-        """
-
-        a_edges = {
-            (edge.source_gene_id, edge.target_gene_id): edge
-            for edge in parent_a.edges
-            if edge.source_gene_id in inherited_gene_ids
-            and edge.target_gene_id in inherited_gene_ids
-        }
-
-        b_edges = {
-            (edge.source_gene_id, edge.target_gene_id): edge
-            for edge in parent_b.edges
-            if edge.source_gene_id in inherited_gene_ids
-            and edge.target_gene_id in inherited_gene_ids
-        }
+        a_edges = self._edge_map_by_locus(parent_a)
+        b_edges = self._edge_map_by_locus(parent_b)
 
         all_keys = set(a_edges.keys()) | set(b_edges.keys())
         child_edges: list[GeneEdge] = []
@@ -159,38 +147,77 @@ class SingleCrossoverRecombinationModel(RecombinationModel):
             edge_a = a_edges.get(key)
             edge_b = b_edges.get(key)
 
+            source_locus, target_locus = key
+            child_source_id = locus_id_map.get(source_locus)
+            child_target_id = locus_id_map.get(target_locus)
+
+            if child_source_id is None or child_target_id is None:
+                continue
+
             if edge_a is not None and edge_b is not None:
                 if rng.random() <= self.inherit_shared_edges_probability:
-                    child_edges.append(self._merge_shared_edges(edge_a, edge_b, rng))
+                    merged_weight = (edge_a.weight + edge_b.weight) / 2.0
+                    child_edges.append(
+                        GeneEdge(
+                            source_gene_id=child_source_id,
+                            target_gene_id=child_target_id,
+                            weight=merged_weight,
+                        )
+                    )
                 continue
 
             if edge_a is not None:
                 if rng.random() <= self.inherit_unique_edge_probability:
-                    child_edges.append(edge_a)
+                    child_edges.append(
+                        GeneEdge(
+                            source_gene_id=child_source_id,
+                            target_gene_id=child_target_id,
+                            weight=edge_a.weight,
+                        )
+                    )
                 continue
 
             if edge_b is not None:
                 if rng.random() <= self.inherit_unique_edge_probability:
-                    child_edges.append(edge_b)
+                    child_edges.append(
+                        GeneEdge(
+                            source_gene_id=str(child_source_id),
+                            target_gene_id=str(child_target_id),
+                            weight=edge_b.weight,
+                        )
+                    )
 
         return child_edges
 
-    def _merge_shared_edges(
-        self,
-        edge_a: GeneEdge,
-        edge_b: GeneEdge,
-        rng: random.Random,
-    ) -> GeneEdge:
-        """
-        Если одно и то же ребро есть у обоих родителей,
-        можно:
-        - выбрать вес одного из родителей
-        - или усреднить
-        """
-        merged_weight = (edge_a.weight + edge_b.weight) / 2.0
+    def _edge_map_by_locus(self, genome: Genome) -> dict[tuple[tuple, tuple], GeneEdge]:
+        result: dict[tuple[tuple, tuple], GeneEdge] = {}
 
-        return GeneEdge(
-            source_gene_id=edge_a.source_gene_id,
-            target_gene_id=edge_a.target_gene_id,
-            weight=merged_weight,
+        for edge in genome.edges:
+            source_gene = genome.get_gene(edge.source_gene_id)
+            target_gene = genome.get_gene(edge.target_gene_id)
+
+            key = (
+                self._gene_locus_key(source_gene),
+                self._gene_locus_key(target_gene),
+            )
+            result[key] = edge
+
+        return result
+
+    def _gene_locus_key(self, gene: Gene) -> tuple:
+        return (
+            gene.effect_type.value,
+            gene.chromosome_id,
+            round(gene.position, 6),
+        )
+
+    def _clone_gene_with_new_id(self, gene: Gene, new_id: int) -> Gene:
+        return Gene(
+            id=str(new_id),
+            name=gene.name,
+            effect_type=gene.effect_type,
+            chromosome_id=gene.chromosome_id,
+            position=gene.position,
+            default_active=gene.default_active,
+            threshold=gene.threshold,
         )

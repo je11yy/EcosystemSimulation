@@ -1,10 +1,12 @@
 import { useState } from "react";
-import type { TerritoryState } from "../api/types";
+import type { GenomeTemplateRead, TerritoryState } from "../api/types";
 
 type Props = {
   territories: TerritoryState[];
+  genomeTemplates: GenomeTemplateRead[];
   onSubmit: (payload: {
     territory_id: number;
+    genome_template_id: number;
     hunger: number;
     hp: number;
     base_strength: number;
@@ -20,8 +22,14 @@ type Props = {
   isBusy?: boolean;
 };
 
-export function CreateAgentForm({ territories, onSubmit, isBusy = false }: Props) {
+export function CreateAgentForm({
+  territories,
+  genomeTemplates,
+  onSubmit,
+  isBusy = false,
+}: Props) {
   const [territoryId, setTerritoryId] = useState<number | "">("");
+  const [genomeTemplateId, setGenomeTemplateId] = useState<number | "">("");
   const [hunger, setHunger] = useState(0);
   const [hp, setHp] = useState(5);
   const [baseStrength, setBaseStrength] = useState(3);
@@ -54,6 +62,20 @@ export function CreateAgentForm({ territories, onSubmit, isBusy = false }: Props
           ))}
         </select>
 
+        <select
+          value={genomeTemplateId}
+          onChange={(e) =>
+            setGenomeTemplateId(e.target.value === "" ? "" : Number(e.target.value))
+          }
+        >
+          <option value="">Выбери шаблон генома</option>
+          {genomeTemplates.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.name} ({template.species_group})
+            </option>
+          ))}
+        </select>
+
         <input type="number" value={hunger} onChange={(e) => setHunger(Number(e.target.value))} placeholder="Hunger" />
         <input type="number" value={hp} onChange={(e) => setHp(Number(e.target.value))} placeholder="HP" />
         <input type="number" value={baseStrength} onChange={(e) => setBaseStrength(Number(e.target.value))} placeholder="Base strength" />
@@ -66,10 +88,11 @@ export function CreateAgentForm({ territories, onSubmit, isBusy = false }: Props
         <input type="number" step="0.1" value={satisfaction} onChange={(e) => setSatisfaction(Number(e.target.value))} placeholder="Satisfaction" />
 
         <button
-          disabled={isBusy || territoryId === ""}
+          disabled={isBusy || territoryId === "" || genomeTemplateId === ""}
           onClick={() =>
             onSubmit({
               territory_id: Number(territoryId),
+              genome_template_id: Number(genomeTemplateId),
               hunger,
               hp,
               base_strength: baseStrength,

@@ -81,6 +81,7 @@ def build_runtime_router(
                             "type": decision.chosen.type.value,
                             "to_territory": decision.chosen.to_territory,
                             "partner_id": decision.chosen.partner_id,
+                            "target_id": decision.chosen.target_id,
                             "tag": decision.chosen.tag,
                         },
                     }
@@ -95,6 +96,12 @@ def build_runtime_router(
                         "consumed_food": result.consumed_food,
                         "created_pregnancy": result.created_pregnancy,
                         "hp_loss": result.hp_loss,
+                        "hunger_restored": result.hunger_restored,
+                        "target_id": result.target_id,
+                        "damage_to_target": result.damage_to_target,
+                        "target_died": result.target_died,
+                        "hunter_died": result.hunter_died,
+                        "hunger_delta": result.hunger_delta,
                     }
                     for result in step_result.applied_results
                 ],
@@ -122,6 +129,50 @@ def build_runtime_router(
                         "loser_hp_loss": fight.loser_hp_loss,
                     }
                     for fight in step_result.fights
+                ],
+                "hunts": [
+                    {
+                        "territory_id": hunt.territory_id,
+                        "hunter_id": hunt.hunter_id,
+                        "target_id": hunt.target_id,
+                        "success": hunt.success,
+                        "damage_to_target": hunt.damage_to_target,
+                        "damage_to_hunter": hunt.damage_to_hunter,
+                        "target_died": hunt.target_died,
+                        "hunter_died": hunt.hunter_died,
+                        "hunger_restored": hunt.hunger_restored,
+                    }
+                    for hunt in step_result.hunts
+                ],
+                "metrics": {
+                    "alive_population": step_result.metrics.alive_population,
+                    "population_by_species_group": step_result.metrics.population_by_species_group,
+                    "avg_hunger_alive": step_result.metrics.avg_hunger_alive,
+                    "avg_hp_alive": step_result.metrics.avg_hp_alive,
+                    "avg_hunt_cooldown_alive": step_result.metrics.avg_hunt_cooldown_alive,
+                    "occupancy_by_territory": step_result.metrics.occupancy_by_territory,
+                    "action_counts": step_result.metrics.action_counts,
+                    "successful_hunts": step_result.metrics.successful_hunts,
+                    "births_count": step_result.metrics.births_count,
+                    "deaths_count": step_result.metrics.deaths_count,
+                    "deaths_by_reason": step_result.metrics.deaths_by_reason,
+                },
+                "metrics_history": [
+                    {
+                        "tick": point.tick,
+                        "alive_population": point.alive_population,
+                        "avg_hunger_alive": point.avg_hunger_alive,
+                        "avg_hp_alive": point.avg_hp_alive,
+                        "avg_hunt_cooldown_alive": point.avg_hunt_cooldown_alive,
+                        "successful_hunts": point.successful_hunts,
+                        "births_count": point.births_count,
+                        "deaths_count": point.deaths_count,
+                        "population_by_species_group": point.population_by_species_group,
+                        "occupancy_by_territory": point.occupancy_by_territory,
+                        "action_counts": point.action_counts,
+                        "deaths_by_reason": point.deaths_by_reason,
+                    }
+                    for point in step_result.metrics_history
                 ],
             },
         )

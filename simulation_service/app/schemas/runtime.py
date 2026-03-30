@@ -22,6 +22,7 @@ class RuntimeTerritoryEdgeDTO(BaseModel):
 class RuntimeGeneDTO(BaseModel):
     id: str
     name: str
+    effect_type: str
     chromosome_id: str
     position: float
     default_active: bool
@@ -50,9 +51,13 @@ class RuntimeAgentDTO(BaseModel):
     base_defense: int
 
     sex: str
+    species_group: str
+
     pregnant: bool
     ticks_to_birth: int
     father_id: Optional[str] = None
+
+    hunt_cooldown: int = 0
 
     base_temp_pref: float
     satisfaction: float

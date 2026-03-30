@@ -1,4 +1,8 @@
 from simulation_core.agents.genome.child_builder import ChildGenomeBuilder
+from simulation_core.agents.genome.compatibility import (
+    GenomeCompatibilityCalculator,
+    GenomeCompatibilityResult,
+)
 from simulation_core.agents.genome.edge import GeneEdge
 from simulation_core.agents.genome.effects import GenomeEffects, GenomeEffectsResolver
 from simulation_core.agents.genome.gene import Gene
@@ -32,4 +36,6 @@ __all__ = [
     "SimpleMutationModel",
     "ChildGenomeBuilder",
     "SimpleGenomeEffectsResolver",
+    "GenomeCompatibilityCalculator",
+    "GenomeCompatibilityResult",
 ]

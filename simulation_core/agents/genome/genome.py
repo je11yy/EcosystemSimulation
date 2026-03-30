@@ -21,7 +21,7 @@ class Genome:
     и связей с другими генами.
     """
 
-    genes: dict[str, Gene] = field(default_factory=lambda: dict[str, Gene]())  # Гены по ID
+    genes: dict[int, Gene] = field(default_factory=lambda: dict[int, Gene]())  # Гены по ID
     edges: list[GeneEdge] = field(default_factory=lambda: list[GeneEdge]())  # Связи между генами
 
     def add_gene(self, gene: Gene) -> None:
@@ -34,17 +34,17 @@ class Genome:
             raise ValueError(f"Unknown target gene: {edge.target_gene_id}")
         self.edges.append(edge)
 
-    def get_gene(self, gene_id: str) -> Gene:
+    def get_gene(self, gene_id: int) -> Gene:
         return self.genes[gene_id]
 
     def all_genes(self) -> list[Gene]:
         return list(self.genes.values())
 
-    def incoming_edges(self, gene_id: str) -> list[GeneEdge]:
+    def incoming_edges(self, gene_id: int) -> list[GeneEdge]:
         # Получает все входящие связи для гена.
         return [edge for edge in self.edges if edge.target_gene_id == gene_id]
 
-    def outgoing_edges(self, gene_id: str) -> list[GeneEdge]:
+    def outgoing_edges(self, gene_id: int) -> list[GeneEdge]:
         # Получает все исходящие связи для гена.
         return [edge for edge in self.edges if edge.source_gene_id == gene_id]
 

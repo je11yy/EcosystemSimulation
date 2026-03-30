@@ -12,6 +12,8 @@ from app.schemas.agent import AgentCreate, AgentRead
 from app.schemas.simulation import SimulationCreate, SimulationRead
 from app.schemas.territory import TerritoryCreate, TerritoryRead, TerritoryUpdate
 from app.schemas.territory_edge import TerritoryEdgeCreate, TerritoryEdgeRead
+from app.services.builtin_genome_template_seeder import BuiltinGenomeTemplateSeeder
+from app.services.demo_simulation_seeder import DemoSimulationSeeder
 from app.services.engine_persister import EnginePersister
 from app.services.simulation_client import SimulationClient
 from app.services.simulation_runtime_manager import SimulationRuntimeManager
@@ -20,22 +22,28 @@ from app.services.simulation_service import SimulationService
 router = APIRouter(prefix="/simulations", tags=["simulations"])
 
 
+async def _ensure_user_exists(db: AsyncSession, user_id: int) -> None:
+    existing = await db.execute(select(User).where(User.id == user_id))
+    if existing.scalar_one_or_none() is None:
+        db.add(
+            User(
+                id=user_id,
+                email=f"user{user_id}@example.com",
+                hashed_password="placeholder",
+            )
+        )
+        await db.flush()
+
+
 @router.post("", response_model=SimulationRead)
 async def create_simulation(
     payload: SimulationCreate,
     user_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    # создаём пользователя если не существует
-    existing_user = await db.execute(select(User).where(User.id == user_id))
-    if existing_user.scalar_one_or_none() is None:
-        user = User(
-            id=user_id,
-            email=f"user{user_id}@example.com",
-            hashed_password="placeholder",
-        )
-        db.add(user)
-        await db.flush()
+    await _ensure_user_exists(db, user_id)
+    await BuiltinGenomeTemplateSeeder().seed_for_user(db, user_id)
+
     service = SimulationService(db)
     simulation = await service.create_simulation(user_id=user_id, name=payload.name)
     return simulation
@@ -60,8 +68,12 @@ async def list_simulations(
     user_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
+    await _ensure_user_exists(db, user_id)
+    await BuiltinGenomeTemplateSeeder().seed_for_user(db, user_id)
+    await DemoSimulationSeeder().seed_for_user(db, user_id)
+
     service = SimulationService(db)
-    return await service.list_user_simulations(user_id=user_id)
+    return await service.list_user_simulations(user_id)
 
 
 @router.post("/{simulation_id}/start")

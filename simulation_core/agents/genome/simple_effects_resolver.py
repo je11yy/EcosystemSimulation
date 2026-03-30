@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from simulation_core.agents.genome.effect_type import GeneEffectType
 from simulation_core.agents.genome.effects import GenomeEffects, GenomeEffectsResolver
 from simulation_core.agents.genome.genome import Genome
 from simulation_core.agents.genome.state import GenomeState
@@ -21,21 +22,25 @@ class SimpleGenomeEffectsResolver(GenomeEffectsResolver):
         defense_delta = 0
         temp_pref_delta = 0.0
 
-        if genome_state.is_active("g_hunger_drive"):
-            strength_delta += 1
+        for gene in genome.all_genes():
+            if not genome_state.is_active(gene.id):
+                continue
 
-        if genome_state.is_active("g_low_activity"):
-            strength_delta -= 1
-            defense_delta += 1
+            if gene.effect_type == GeneEffectType.HUNGER_DRIVE:
+                strength_delta += 1
 
-        if genome_state.is_active("g_heat_resistance"):
-            temp_pref_delta += 3.0
+            elif gene.effect_type == GeneEffectType.LOW_ACTIVITY:
+                strength_delta -= 1
+                defense_delta += 1
 
-        if genome_state.is_active("g_cold_resistance"):
-            temp_pref_delta -= 3.0
+            elif gene.effect_type == GeneEffectType.HEAT_RESISTANCE:
+                temp_pref_delta += 3.0
 
-        if genome_state.is_active("g_risk_move"):
-            strength_delta += 1
+            elif gene.effect_type == GeneEffectType.COLD_RESISTANCE:
+                temp_pref_delta -= 3.0
+
+            elif gene.effect_type == GeneEffectType.RISK_MOVE:
+                strength_delta += 1
 
         return GenomeEffects(
             strength_delta=strength_delta,
