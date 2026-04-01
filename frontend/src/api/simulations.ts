@@ -10,6 +10,7 @@ import type {
 	TerritoryEdgeCreatePayload,
 	TerritoryUpdatePayload,
 	SimulationPresetCreatePayload,
+	SimulationStateStepSnapshot,
 } from "./types";
 
 export function getSimulations(userId: number): Promise<SimulationRead[]> {
@@ -27,8 +28,12 @@ export function getSimulation(simulationId: number): Promise<SimulationRead> {
 	return apiFetch<SimulationRead>(`/simulations/${simulationId}`);
 }
 
-export function getSimulationState(simulationId: number): Promise<SimulationStateResponse> {
-	return apiFetch<SimulationStateResponse>(`/simulations/${simulationId}/state`);
+export function getSimulationState(
+	simulationId: number
+): Promise<SimulationStateResponse & SimulationStateStepSnapshot> {
+	return apiFetch<SimulationStateResponse & SimulationStateStepSnapshot>(
+		`/simulations/${simulationId}/state`
+	);
 }
 
 export function startSimulation(simulationId: number): Promise<StartSimulationResponse> {
@@ -112,11 +117,11 @@ export function deleteAgent(simulationId: number, agentId: string) {
 }
 
 export function createSimulationFromPreset(
-  userId: number,
-  payload: SimulationPresetCreatePayload
+	userId: number,
+	payload: SimulationPresetCreatePayload
 ): Promise<SimulationRead> {
-  return apiFetch<SimulationRead>(`/simulations/preset?user_id=${userId}`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+	return apiFetch<SimulationRead>(`/simulations/preset?user_id=${userId}`, {
+		method: "POST",
+		body: JSON.stringify(payload),
+	});
 }

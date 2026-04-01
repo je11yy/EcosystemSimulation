@@ -3,6 +3,7 @@ import { SimulationsPage } from "../pages/SimulationsPage";
 import { SimulationDetailsPage } from "../pages/SimulationDetailsPage";
 import { GenomeTemplatesPage } from "../pages/GenomeTemplatesPage";
 import { GenomeTemplateDetailsPage } from "../pages/GenomeTemplateDetailsPage";
+import { SimulationComparisonPage } from "../pages/SimulationComparisonPage";
 
 export const router = createBrowserRouter([
   {
@@ -12,6 +13,10 @@ export const router = createBrowserRouter([
   {
     path: "/simulations/:simulationId",
     element: <SimulationDetailsPage />,
+  },
+  {
+    path: "/simulations/compare",
+    element: <SimulationComparisonPage />,
   },
   {
     path: "/genome-templates",

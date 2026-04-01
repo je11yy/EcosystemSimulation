@@ -38,3 +38,9 @@ class Simulation(Base):
         "TerritoryEdge", back_populates="simulation", cascade="all, delete-orphan"
     )
     agents = relationship("Agent", back_populates="simulation", cascade="all, delete-orphan")
+    metrics_history = relationship(
+        "SimulationMetricsHistory",
+        back_populates="simulation",
+        cascade="all, delete-orphan",
+        order_by="SimulationMetricsHistory.tick",
+    )

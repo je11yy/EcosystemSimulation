@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSimulation, createSimulationFromPreset, getSimulations } from "../api/simulations";
-import type { SimulationPreset } from "src/api/types";
+import {
+	createSimulation,
+	createSimulationFromPreset,
+	getSimulations,
+} from "../api/simulations";
+import type { SimulationPreset } from "../api/types";
 
 const USER_ID = 1;
 
@@ -45,8 +49,9 @@ export function SimulationsPage() {
 
 	return (
 		<div style={{ padding: 24 }}>
-			<div style={{ marginBottom: 16 }}>
+			<div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
 				<Link to="/genome-templates">Перейти к шаблонам генома</Link>
+				<Link to="/simulations/compare">Сравнение сценариев</Link>
 			</div>
 
 			<h1>Симуляции</h1>
@@ -90,9 +95,7 @@ export function SimulationsPage() {
 			<ul>
 				{simulationsQuery.data?.map((simulation) => (
 					<li key={simulation.id}>
-						<Link to={`/simulations/${simulation.id}`}>
-							{simulation.name}
-						</Link>{" "}
+						<Link to={`/simulations/${simulation.id}`}>{simulation.name}</Link>{" "}
 						— статус: {simulation.status}, tick: {simulation.tick}
 					</li>
 				))}

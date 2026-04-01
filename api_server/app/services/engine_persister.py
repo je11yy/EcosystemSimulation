@@ -8,13 +8,19 @@ from app.models.gene import Gene
 from app.models.gene_edge import GeneEdge
 from app.models.gene_state import GeneState
 from app.models.simulation import Simulation
+from app.models.simulation_metrics_history import SimulationMetricsHistory
 
 
 class EnginePersister:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def persist_state(self, simulation: Simulation, state: dict[str, Any]) -> None:
+    async def persist_state(
+        self,
+        simulation: Simulation,
+        state: dict[str, Any],
+        step_result: dict[str, Any] | None = None,
+    ) -> None:
         simulation.tick = state["tick"]
 
         territories_by_id = {territory.id: territory for territory in simulation.territories}
@@ -143,5 +149,39 @@ class EnginePersister:
                     )
                 )
 
+        await self._persist_metrics_history(simulation, step_result)
+
         await self.db.commit()
         await self.db.refresh(simulation)
+
+    async def _persist_metrics_history(
+        self,
+        simulation: Simulation,
+        step_result: dict[str, Any] | None,
+    ) -> None:
+        if not step_result:
+            return
+
+        metrics = step_result.get("metrics")
+        if not metrics:
+            return
+
+        tick = int(step_result["tick"])
+
+        history_row = SimulationMetricsHistory(
+            simulation_id=simulation.id,
+            tick=tick,
+            alive_population=metrics["alive_population"],
+            avg_hunger_alive=metrics["avg_hunger_alive"],
+            avg_hp_alive=metrics["avg_hp_alive"],
+            avg_hunt_cooldown_alive=metrics["avg_hunt_cooldown_alive"],
+            successful_hunts=metrics["successful_hunts"],
+            births_count=metrics["births_count"],
+            deaths_count=metrics["deaths_count"],
+            population_by_species_group=metrics["population_by_species_group"],
+            occupancy_by_territory=metrics["occupancy_by_territory"],
+            action_counts=metrics["action_counts"],
+            deaths_by_reason=metrics["deaths_by_reason"],
+        )
+
+        self.db.add(history_row)

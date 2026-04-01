@@ -136,7 +136,11 @@ async def step_simulation(
     runtime_response = await client.step_runtime(simulation_id)
 
     persister = EnginePersister(db)
-    await persister.persist_state(simulation, runtime_response["state"])
+    await persister.persist_state(
+        simulation,
+        runtime_response["state"],
+        runtime_response.get("step_result"),
+    )
 
     return {
         "simulation_id": simulation_id,
@@ -172,6 +176,23 @@ async def get_simulation_state(
             for edge in simulation.territory_edges
         ],
         "agents": [agent.model_dump() for agent in payload.agents],
+        "metrics_history": [
+            {
+                "tick": point.tick,
+                "alive_population": point.alive_population,
+                "avg_hunger_alive": point.avg_hunger_alive,
+                "avg_hp_alive": point.avg_hp_alive,
+                "avg_hunt_cooldown_alive": point.avg_hunt_cooldown_alive,
+                "successful_hunts": point.successful_hunts,
+                "births_count": point.births_count,
+                "deaths_count": point.deaths_count,
+                "population_by_species_group": point.population_by_species_group,
+                "occupancy_by_territory": point.occupancy_by_territory,
+                "action_counts": point.action_counts,
+                "deaths_by_reason": point.deaths_by_reason,
+            }
+            for point in simulation.metrics_history
+        ],
     }
 
 
@@ -222,7 +243,11 @@ async def _run_simulation_loop(
                 runtime_response = await client.step_runtime(simulation_id)
 
                 persister = EnginePersister(db)
-                await persister.persist_state(simulation, runtime_response["state"])
+                await persister.persist_state(
+                    simulation,
+                    runtime_response["state"],
+                    runtime_response.get("step_result"),
+                )
 
             await asyncio.sleep(settings.simulation_step_interval_seconds)
 

@@ -74,6 +74,15 @@ export interface SimulationStateResponse {
 	agents: AgentState[];
 }
 
+export interface SimulationStateStepSnapshot {
+	simulation_id: number;
+	tick: number;
+	territories: TerritoryState[];
+	territory_edges: TerritoryEdgeState[];
+	agents: AgentState[];
+	metrics_history: MetricsHistoryPoint[];
+}
+
 export interface StartSimulationResponse {
 	simulation_id: number;
 	status: string;
@@ -312,4 +321,19 @@ export type SimulationPreset =
 export interface SimulationPresetCreatePayload {
 	preset: SimulationPreset;
 	name?: string | null;
+}
+
+export interface MetricsHistoryPoint {
+	tick: number;
+	alive_population: number;
+	avg_hunger_alive: number;
+	avg_hp_alive: number;
+	avg_hunt_cooldown_alive: number;
+	successful_hunts: number;
+	births_count: number;
+	deaths_count: number;
+	population_by_species_group: Record<string, number>;
+	occupancy_by_territory: Record<string, number>;
+	action_counts: Record<string, number>;
+	deaths_by_reason: Record<string, number>;
 }
