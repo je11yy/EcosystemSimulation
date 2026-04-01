@@ -92,37 +92,53 @@ class EnginePersister:
             await self.db.execute(delete(Gene).where(Gene.agent_id == agent.id))
             await self.db.flush()
 
-            for gene_data in agent_data["genes"]:
-                self.db.add(
-                    Gene(
-                        id=int(gene_data["id"]),
-                        agent_id=agent.id,
-                        name=gene_data["name"],
-                        effect_type=gene_data["effect_type"],
-                        chromosome_id=gene_data["chromosome_id"],
-                        position=gene_data["position"],
-                        default_active=gene_data["default_active"],
-                        threshold=gene_data["threshold"],
-                    )
-                )
+            runtime_to_db_gene_id: dict[int, int] = {}
 
-            await self.db.flush()
+            for gene_data in agent_data["genes"]:
+                gene = Gene(
+                    agent_id=agent.id,
+                    name=gene_data["name"],
+                    effect_type=gene_data["effect_type"],
+                    chromosome_id=gene_data["chromosome_id"],
+                    position=gene_data["position"],
+                    default_active=gene_data["default_active"],
+                    threshold=gene_data["threshold"],
+                )
+                self.db.add(gene)
+                await self.db.flush()
+
+                runtime_to_db_gene_id[int(gene_data["id"])] = gene.id
 
             for edge_data in agent_data["gene_edges"]:
+                source_runtime_id = int(edge_data["source_gene_id"])
+                target_runtime_id = int(edge_data["target_gene_id"])
+
+                source_db_id = runtime_to_db_gene_id.get(source_runtime_id)
+                target_db_id = runtime_to_db_gene_id.get(target_runtime_id)
+
+                if source_db_id is None or target_db_id is None:
+                    continue
+
                 self.db.add(
                     GeneEdge(
                         agent_id=agent.id,
-                        source_gene_id=str(edge_data["source_gene_id"]),
-                        target_gene_id=str(edge_data["target_gene_id"]),
+                        source_gene_id=str(source_db_id),
+                        target_gene_id=str(target_db_id),
                         weight=edge_data["weight"],
                     )
                 )
 
             for gene_state_data in agent_data["gene_states"]:
+                runtime_gene_id = int(gene_state_data["gene_id"])
+                db_gene_id = runtime_to_db_gene_id.get(runtime_gene_id)
+
+                if db_gene_id is None:
+                    continue
+
                 self.db.add(
                     GeneState(
                         agent_id=agent.id,
-                        gene_id=str(gene_state_data["gene_id"]),
+                        gene_id=str(db_gene_id),
                         is_active=gene_state_data["is_active"],
                     )
                 )
