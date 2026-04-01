@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.db.session import SessionLocal, get_db
 from app.models.user import User
 from app.schemas.agent import AgentCreate, AgentRead
-from app.schemas.simulation import SimulationCreate, SimulationRead
+from app.schemas.simulation import SimulationCreate, SimulationPresetCreate, SimulationRead
 from app.schemas.territory import TerritoryCreate, TerritoryRead, TerritoryUpdate
 from app.schemas.territory_edge import TerritoryEdgeCreate, TerritoryEdgeRead
 from app.services.builtin_genome_template_seeder import BuiltinGenomeTemplateSeeder
@@ -46,6 +46,24 @@ async def create_simulation(
 
     service = SimulationService(db)
     simulation = await service.create_simulation(user_id=user_id, name=payload.name)
+    return simulation
+
+
+@router.post("/preset", response_model=SimulationRead)
+async def create_simulation_from_preset(
+    payload: SimulationPresetCreate,
+    user_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    await _ensure_user_exists(db, user_id)
+    seeder = DemoSimulationSeeder()
+
+    simulation = await seeder.create_preset_simulation(
+        db=db,
+        user_id=user_id,
+        preset=payload.preset,
+        custom_name=payload.name,
+    )
     return simulation
 
 

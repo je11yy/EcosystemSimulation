@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -17,3 +18,15 @@ class SimulationRead(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class SimulationPresetCreate(BaseModel):
+    preset: Literal[
+        "base_demo",
+        "food_scarcity",
+        "cold_climate",
+        "predator_dominance",
+        "high_density",
+        "social_tolerance",
+    ]
+    name: str | None = None

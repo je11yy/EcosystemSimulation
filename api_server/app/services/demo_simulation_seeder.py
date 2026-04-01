@@ -1,5 +1,6 @@
 import uuid
 from dataclasses import dataclass
+from typing import Literal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,15 @@ from app.models.simulation import Simulation
 from app.models.territory import Territory
 from app.models.territory_edge import TerritoryEdge
 from app.services.builtin_genome_template_seeder import BuiltinGenomeTemplateSeeder
+
+SimulationPresetName = Literal[
+    "base_demo",
+    "food_scarcity",
+    "cold_climate",
+    "predator_dominance",
+    "high_density",
+    "social_tolerance",
+]
 
 
 @dataclass(frozen=True)
@@ -49,6 +59,15 @@ class DemoAgentSpec:
 
 
 class DemoSimulationSeeder:
+    PRESET_TITLES: dict[str, str] = {
+        "base_demo": "Сценарий: базовый",
+        "food_scarcity": "Сценарий: дефицит пищи",
+        "cold_climate": "Сценарий: холодный климат",
+        "predator_dominance": "Сценарий: доминирование хищников",
+        "high_density": "Сценарий: высокая плотность",
+        "social_tolerance": "Сценарий: социальная терпимость",
+    }
+
     DEMO_NAME = "Демо: хищники и травоядные"
 
     TERRITORIES: tuple[DemoTerritorySpec, ...] = (
@@ -173,97 +192,26 @@ class DemoSimulationSeeder:
     async def seed_for_user(self, db: AsyncSession, user_id: int) -> None:
         await BuiltinGenomeTemplateSeeder().seed_for_user(db, user_id)
 
-        existing_stmt = select(Simulation).where(
-            Simulation.user_id == user_id,
-            Simulation.name == self.DEMO_NAME,
+        existing_stmt = (
+            select(Simulation.id)
+            .where(
+                Simulation.user_id == user_id,
+                Simulation.name == self.PRESET_TITLES["base_demo"],
+            )
+            .limit(1)
         )
         existing_result = await db.execute(existing_stmt)
-        existing_demo = existing_result.scalar_one_or_none()
+        existing_demo_id = existing_result.scalar_one_or_none()
 
-        if existing_demo is not None:
+        if existing_demo_id is not None:
             return
 
-        template_stmt = (
-            select(GenomeTemplate)
-            .where(
-                GenomeTemplate.user_id == user_id,
-                GenomeTemplate.is_builtin == True,  # noqa: E712
-                GenomeTemplate.name.in_(
-                    [
-                        "Травоядный собиратель",
-                        "Хищник-охотник",
-                        "Осторожный кочевник",
-                        "Всеядный оппортунист",
-                    ]
-                ),
-            )
-            .options(
-                selectinload(GenomeTemplate.genes),
-                selectinload(GenomeTemplate.edges),
-                selectinload(GenomeTemplate.gene_states),
-            )
-        )
-        template_result = await db.execute(template_stmt)
-        templates = {template.name: template for template in template_result.scalars().all()}
-
-        simulation = Simulation(
+        await self.create_preset_simulation(
+            db=db,
             user_id=user_id,
-            name=self.DEMO_NAME,
-            status="draft",
-            tick=0,
+            preset="base_demo",
+            custom_name=None,
         )
-        db.add(simulation)
-        await db.flush()
-
-        territory_id_by_key: dict[str, int] = {}
-
-        for territory_spec in self.TERRITORIES:
-            territory = Territory(
-                simulation_id=simulation.id,
-                food=territory_spec.food,
-                temperature=territory_spec.temperature,
-                food_regen_per_tick=territory_spec.food_regen_per_tick,
-                food_capacity=territory_spec.food_capacity,
-                x=territory_spec.x,
-                y=territory_spec.y,
-            )
-            db.add(territory)
-            await db.flush()
-            territory_id_by_key[territory_spec.key] = territory.id
-
-        for edge_spec in self.EDGES:
-            db.add(
-                TerritoryEdge(
-                    simulation_id=simulation.id,
-                    source_territory_id=territory_id_by_key[edge_spec.source_key],
-                    target_territory_id=territory_id_by_key[edge_spec.target_key],
-                    movement_cost=edge_spec.movement_cost,
-                )
-            )
-
-        for agent_spec in self.AGENTS:
-            template = templates.get(agent_spec.template_name)
-            if template is None:
-                continue
-
-            territory_id = territory_id_by_key[agent_spec.territory_key]
-
-            await self._create_agent_from_template(
-                db=db,
-                simulation_id=simulation.id,
-                territory_id=territory_id,
-                template=template,
-                hunger=agent_spec.hunger,
-                hp=agent_spec.hp,
-                base_strength=agent_spec.base_strength,
-                base_defense=agent_spec.base_defense,
-                sex=agent_spec.sex,
-                base_temp_pref=agent_spec.base_temp_pref,
-                satisfaction=agent_spec.satisfaction,
-                alive=agent_spec.alive,
-            )
-
-        await db.commit()
 
     async def _create_agent_from_template(
         self,
@@ -345,3 +293,162 @@ class DemoSimulationSeeder:
                     is_active=template_state.is_active,
                 )
             )
+
+    async def create_preset_simulation(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        preset: SimulationPresetName,
+        custom_name: str | None = None,
+    ) -> Simulation:
+        await BuiltinGenomeTemplateSeeder().seed_for_user(db, user_id)
+
+        template_stmt = (
+            select(GenomeTemplate)
+            .where(
+                GenomeTemplate.user_id == user_id,
+                GenomeTemplate.is_builtin == True,  # noqa: E712
+            )
+            .options(
+                selectinload(GenomeTemplate.genes),
+                selectinload(GenomeTemplate.edges),
+                selectinload(GenomeTemplate.gene_states),
+            )
+        )
+        template_result = await db.execute(template_stmt)
+        templates = {template.name: template for template in template_result.scalars().all()}
+
+        simulation = Simulation(
+            user_id=user_id,
+            name=custom_name or self.PRESET_TITLES[preset],
+            status="draft",
+            tick=0,
+        )
+        db.add(simulation)
+        await db.flush()
+
+        territory_specs = self._build_territories_for_preset(preset)
+        edge_specs = self._build_edges_for_preset(preset)
+        agent_specs = self._build_agents_for_preset(preset)
+
+        territory_id_by_key: dict[str, int] = {}
+
+        for territory_spec in territory_specs:
+            territory = Territory(
+                simulation_id=simulation.id,
+                food=territory_spec.food,
+                temperature=territory_spec.temperature,
+                food_regen_per_tick=territory_spec.food_regen_per_tick,
+                food_capacity=territory_spec.food_capacity,
+                x=territory_spec.x,
+                y=territory_spec.y,
+            )
+            db.add(territory)
+            await db.flush()
+            territory_id_by_key[territory_spec.key] = territory.id
+
+        for edge_spec in edge_specs:
+            db.add(
+                TerritoryEdge(
+                    simulation_id=simulation.id,
+                    source_territory_id=territory_id_by_key[edge_spec.source_key],
+                    target_territory_id=territory_id_by_key[edge_spec.target_key],
+                    movement_cost=edge_spec.movement_cost,
+                )
+            )
+
+        for agent_spec in agent_specs:
+            template = templates.get(agent_spec.template_name)
+            if template is None:
+                continue
+
+            territory_id = territory_id_by_key[agent_spec.territory_key]
+
+            await self._create_agent_from_template(
+                db=db,
+                simulation_id=simulation.id,
+                territory_id=territory_id,
+                template=template,
+                hunger=agent_spec.hunger,
+                hp=agent_spec.hp,
+                base_strength=agent_spec.base_strength,
+                base_defense=agent_spec.base_defense,
+                sex=agent_spec.sex,
+                base_temp_pref=agent_spec.base_temp_pref,
+                satisfaction=agent_spec.satisfaction,
+                alive=agent_spec.alive,
+            )
+
+        await db.commit()
+        return simulation
+
+    def _build_territories_for_preset(
+        self,
+        preset: SimulationPresetName,
+    ) -> tuple[DemoTerritorySpec, ...]:
+        if preset == "food_scarcity":
+            return (
+                DemoTerritorySpec("meadow", 3.0, 20.0, 0.4, 5.0, 120, 160),
+                DemoTerritorySpec("contested", 0.0, 19.0, 0.2, 3.0, 420, 160),
+                DemoTerritorySpec("warm", 2.0, 26.0, 0.3, 4.0, 720, 120),
+                DemoTerritorySpec("cold", 1.0, 9.0, 0.3, 4.0, 420, 420),
+            )
+
+        if preset == "cold_climate":
+            return (
+                DemoTerritorySpec("meadow", 8.0, 8.0, 1.2, 10.0, 120, 160),
+                DemoTerritorySpec("contested", 5.0, 5.0, 0.8, 7.0, 420, 160),
+                DemoTerritorySpec("warm", 4.0, 12.0, 0.9, 6.0, 720, 120),
+                DemoTerritorySpec("cold", 5.0, 2.0, 1.0, 7.0, 420, 420),
+            )
+
+        return self.TERRITORIES
+
+    def _build_edges_for_preset(
+        self,
+        preset: SimulationPresetName,
+    ) -> tuple[DemoEdgeSpec, ...]:
+        if preset == "high_density":
+            return (
+                DemoEdgeSpec("meadow", "contested", 1.0),
+                DemoEdgeSpec("contested", "warm", 1.0),
+                DemoEdgeSpec("contested", "cold", 1.0),
+                DemoEdgeSpec("meadow", "cold", 1.0),
+                DemoEdgeSpec("meadow", "warm", 1.0),
+            )
+
+        return self.EDGES
+
+    def _build_agents_for_preset(
+        self,
+        preset: SimulationPresetName,
+    ) -> tuple[DemoAgentSpec, ...]:
+        if preset == "predator_dominance":
+            return (
+                DemoAgentSpec("Хищник-охотник", "contested", 4, 5, 5, 3, "male", 19.0),
+                DemoAgentSpec("Хищник-охотник", "contested", 3, 5, 4, 3, "female", 19.0),
+                DemoAgentSpec("Хищник-охотник", "warm", 3, 5, 4, 3, "male", 24.0),
+                DemoAgentSpec("Травоядный собиратель", "meadow", 1, 5, 2, 2, "female", 20.0),
+                DemoAgentSpec("Травоядный собиратель", "cold", 2, 5, 2, 2, "male", 10.0),
+            )
+
+        if preset == "high_density":
+            return (
+                DemoAgentSpec("Травоядный собиратель", "contested", 1, 5, 2, 2, "female", 19.0),
+                DemoAgentSpec("Травоядный собиратель", "contested", 2, 5, 2, 2, "male", 19.0),
+                DemoAgentSpec("Всеядный оппортунист", "contested", 2, 5, 3, 3, "female", 19.0),
+                DemoAgentSpec("Всеядный оппортунист", "contested", 2, 5, 3, 3, "male", 19.0),
+                DemoAgentSpec("Осторожный кочевник", "contested", 1, 5, 2, 3, "male", 19.0),
+                DemoAgentSpec("Хищник-охотник", "warm", 4, 5, 5, 3, "male", 24.0),
+            )
+
+        if preset == "social_tolerance":
+            return (
+                DemoAgentSpec("Травоядный собиратель", "meadow", 1, 5, 2, 2, "female", 20.0),
+                DemoAgentSpec("Травоядный собиратель", "meadow", 2, 5, 2, 2, "male", 20.0),
+                DemoAgentSpec("Всеядный оппортунист", "meadow", 2, 5, 3, 3, "female", 20.0),
+                DemoAgentSpec("Всеядный оппортунист", "contested", 2, 5, 3, 3, "male", 19.0),
+                DemoAgentSpec("Осторожный кочевник", "cold", 1, 5, 2, 3, "male", 11.0),
+            )
+
+        return self.AGENTS

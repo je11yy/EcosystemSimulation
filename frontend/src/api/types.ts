@@ -300,3 +300,16 @@ export interface GenomeTemplateDetails {
 	edges: GenomeTemplateEdge[];
 	gene_states: GenomeTemplateGeneState[];
 }
+
+export type SimulationPreset =
+	| "base_demo"
+	| "food_scarcity"
+	| "cold_climate"
+	| "predator_dominance"
+	| "high_density"
+	| "social_tolerance";
+
+export interface SimulationPresetCreatePayload {
+	preset: SimulationPreset;
+	name?: string | null;
+}
