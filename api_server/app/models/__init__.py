@@ -7,6 +7,7 @@ from app.models.genome_template_edge import GenomeTemplateEdge
 from app.models.genome_template_gene import GenomeTemplateGene
 from app.models.genome_template_gene_state import GenomeTemplateGeneState
 from app.models.simulation import Simulation
+from app.models.simulation_last_step import SimulationLastStep
 from app.models.simulation_metrics_history import SimulationMetricsHistory
 from app.models.territory import Territory
 from app.models.territory_edge import TerritoryEdge
@@ -26,4 +27,5 @@ __all__ = [
     "GenomeTemplateGene",
     "GenomeTemplateEdge",
     "GenomeTemplateGeneState",
+    "SimulationLastStep",
 ]

@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	deleteAgent,
+	downloadBlob,
+	exportSimulationMetricsHistory,
 	getSimulation,
 	getSimulationState,
 	pauseSimulation,
@@ -14,7 +16,7 @@ import {
 import type { StepSimulationResponse } from "../api/types";
 import { SimulationControls } from "../components/SimulationControls";
 import { TerritoryGraph } from "../components/TerritoryGraph";
-import LastStepPanel, {type LastStepResult} from "../components/LastStepPanel";
+import LastStepPanel, { type LastStepResult } from "../components/LastStepPanel";
 import { CreateTerritoryForm } from "../components/CreateTerritoryForm";
 import { CreateAgentForm } from "../components/CreateAgentForm";
 import {
@@ -55,6 +57,14 @@ export function SimulationDetailsPage() {
 		enabled: Number.isFinite(simulationId),
 		refetchInterval: 1500,
 	});
+
+	useEffect(() => {
+		if (!stateQuery.data?.last_step?.step_result) {
+			return;
+		}
+
+		setLastStepResult(stateQuery.data.last_step.step_result);
+	}, [stateQuery.data]);
 
 	const genomeTemplatesQuery = useQuery({
 		queryKey: ["genome-templates", 1],
@@ -241,6 +251,20 @@ export function SimulationDetailsPage() {
 		setSelectedAgentId(null);
 	};
 
+	const handleExportMetricsHistory = async (format: "csv" | "json") => {
+		if (!simulationId) {
+			return;
+		}
+
+		const blob = await exportSimulationMetricsHistory(
+			simulationId,
+			1,
+			format
+		);
+
+		downloadBlob(blob, `simulation_${simulationId}_metrics_history.${format}`);
+	};
+
 	return (
 		<div style={{ padding: 24 }}>
 			<Link to="/">← Назад</Link>
@@ -261,6 +285,15 @@ export function SimulationDetailsPage() {
 				onStop={() => stopMutation.mutate()}
 				isBusy={isBusy}
 			/>
+
+			<div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+				<button onClick={() => handleExportMetricsHistory("csv")}>
+					Экспорт history CSV
+				</button>
+				<button onClick={() => handleExportMetricsHistory("json")}>
+					Экспорт history JSON
+				</button>
+			</div>
 
 			{stateQuery.isLoading && <p>Загрузка состояния...</p>}
 			{stateQuery.isError && <p>Не удалось загрузить состояние</p>}

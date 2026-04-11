@@ -44,3 +44,9 @@ class Simulation(Base):
         cascade="all, delete-orphan",
         order_by="SimulationMetricsHistory.tick",
     )
+    last_step = relationship(
+        "SimulationLastStep",
+        back_populates="simulation",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )

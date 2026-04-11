@@ -1,13 +1,17 @@
 import asyncio
+import csv
+import io
+import json
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.session import SessionLocal, get_db
 from app.models.user import User
+from app.repositories.simulation_repository import SimulationRepository
 from app.schemas.agent import AgentCreate, AgentRead
 from app.schemas.simulation import SimulationCreate, SimulationPresetCreate, SimulationRead
 from app.schemas.territory import TerritoryCreate, TerritoryRead, TerritoryUpdate
@@ -193,6 +197,14 @@ async def get_simulation_state(
             }
             for point in simulation.metrics_history
         ],
+        "last_step": (
+            {
+                "tick": simulation.last_step.tick,
+                "step_result": simulation.last_step.step_result,
+            }
+            if simulation.last_step is not None
+            else None
+        ),
     }
 
 
@@ -542,3 +554,92 @@ async def delete_agent(
         await client.init_runtime(init_payload)
 
     return {"ok": True, "agent_id": agent_id}
+
+
+@router.get("/{simulation_id}/metrics-history/export")
+async def export_simulation_metrics_history(
+    simulation_id: int,
+    user_id: int,
+    format: str = Query("csv", pattern="^(csv|json)$"),
+    db: Annotated[AsyncSession, Depends(get_db)] = None,
+):
+    repo = SimulationRepository(db)
+    simulation = await repo.get_full_by_id(simulation_id)
+
+    if simulation is None or simulation.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    history = [
+        {
+            "tick": point.tick,
+            "alive_population": point.alive_population,
+            "avg_hunger_alive": point.avg_hunger_alive,
+            "avg_hp_alive": point.avg_hp_alive,
+            "avg_hunt_cooldown_alive": point.avg_hunt_cooldown_alive,
+            "successful_hunts": point.successful_hunts,
+            "births_count": point.births_count,
+            "deaths_count": point.deaths_count,
+            "population_by_species_group": point.population_by_species_group,
+            "occupancy_by_territory": point.occupancy_by_territory,
+            "action_counts": point.action_counts,
+            "deaths_by_reason": point.deaths_by_reason,
+        }
+        for point in simulation.metrics_history
+    ]
+
+    filename_base = f"simulation_{simulation_id}_metrics_history"
+
+    if format == "json":
+        payload = {
+            "simulation_id": simulation.id,
+            "simulation_name": simulation.name,
+            "history": history,
+        }
+        return Response(
+            content=json.dumps(payload, ensure_ascii=False, indent=2),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{filename_base}.json"'},
+        )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "tick",
+            "alive_population",
+            "avg_hunger_alive",
+            "avg_hp_alive",
+            "avg_hunt_cooldown_alive",
+            "successful_hunts",
+            "births_count",
+            "deaths_count",
+            "population_by_species_group",
+            "occupancy_by_territory",
+            "action_counts",
+            "deaths_by_reason",
+        ]
+    )
+
+    for point in history:
+        writer.writerow(
+            [
+                point["tick"],
+                point["alive_population"],
+                point["avg_hunger_alive"],
+                point["avg_hp_alive"],
+                point["avg_hunt_cooldown_alive"],
+                point["successful_hunts"],
+                point["births_count"],
+                point["deaths_count"],
+                json.dumps(point["population_by_species_group"], ensure_ascii=False),
+                json.dumps(point["occupancy_by_territory"], ensure_ascii=False),
+                json.dumps(point["action_counts"], ensure_ascii=False),
+                json.dumps(point["deaths_by_reason"], ensure_ascii=False),
+            ]
+        )
+
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename_base}.csv"'},
+    )

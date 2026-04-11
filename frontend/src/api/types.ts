@@ -337,3 +337,16 @@ export interface MetricsHistoryPoint {
 	action_counts: Record<string, number>;
 	deaths_by_reason: Record<string, number>;
 }
+
+export interface SimulationStateStepSnapshot {
+	simulation_id: number;
+	tick: number;
+	territories: TerritoryState[];
+	territory_edges: TerritoryEdgeState[];
+	agents: AgentState[];
+	metrics_history: MetricsHistoryPoint[];
+	last_step: {
+		tick: number;
+		step_result: StepSimulationResponse["step_result"];
+	} | null;
+}

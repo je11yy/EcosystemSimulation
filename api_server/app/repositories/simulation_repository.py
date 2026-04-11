@@ -40,6 +40,7 @@ class SimulationRepository:
                 selectinload(Simulation.agents).selectinload(Agent.gene_edges),
                 selectinload(Simulation.agents).selectinload(Agent.gene_states),
                 selectinload(Simulation.metrics_history),
+                selectinload(Simulation.last_step),
             )
         )
         result = await self.db.execute(stmt)

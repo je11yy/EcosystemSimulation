@@ -8,6 +8,7 @@ from app.models.gene import Gene
 from app.models.gene_edge import GeneEdge
 from app.models.gene_state import GeneState
 from app.models.simulation import Simulation
+from app.models.simulation_last_step import SimulationLastStep
 from app.models.simulation_metrics_history import SimulationMetricsHistory
 
 
@@ -150,6 +151,7 @@ class EnginePersister:
                 )
 
         await self._persist_metrics_history(simulation, step_result)
+        await self._persist_last_step(simulation, step_result)
 
         await self.db.commit()
         await self.db.refresh(simulation)
@@ -185,3 +187,25 @@ class EnginePersister:
         )
 
         self.db.add(history_row)
+
+    async def _persist_last_step(
+        self,
+        simulation: Simulation,
+        step_result: dict[str, Any] | None,
+    ) -> None:
+        if not step_result:
+            return
+
+        existing = simulation.last_step
+        if existing is None:
+            existing = SimulationLastStep(
+                simulation_id=simulation.id,
+                tick=int(step_result["tick"]),
+                step_result=step_result,
+            )
+            self.db.add(existing)
+            simulation.last_step = existing
+            return
+
+        existing.tick = int(step_result["tick"])
+        existing.step_result = step_result
