@@ -1,0 +1,8 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        args: [--fix, --config=pyproject.toml, simulation_service, api_server, simulation_core]
+      - id: ruff-format
+        args: [--config=pyproject.toml, simulation_service, api_server, simulation_core]
