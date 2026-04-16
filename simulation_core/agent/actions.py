@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from enum import Enum
+from typing import Optional
 
 
 class ActionType(str, Enum):
@@ -7,3 +9,11 @@ class ActionType(str, Enum):
     MATE = "mate"
     REST = "rest"
     HUNT = "hunt"
+
+
+@dataclass(frozen=True)
+class ActionOption:
+    type: ActionType
+    to_territory: Optional[int] = None
+    partner_id: Optional[int] = None
+    target_id: Optional[int] = None

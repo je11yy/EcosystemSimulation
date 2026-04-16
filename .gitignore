@@ -19,7 +19,23 @@ env/
 .mypy_cache/
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
+.cache/
 htmlcov/
+*.egg-info/
+pip-wheel-metadata/
+
+# =========================
+# Local databases / dumps
+# =========================
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql
+postgres_data/
+data/
 
 # =========================
 # React / Node

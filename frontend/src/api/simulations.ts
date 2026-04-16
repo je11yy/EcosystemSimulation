@@ -1,0 +1,60 @@
+import { apiFetch } from "./client";
+import type { Simulation, Response, SimulationDetails } from "./types";
+
+export function getSimulations(): Promise<Simulation[]> {
+    return apiFetch<Simulation[]>("/simulations");
+};
+
+export function getSimulation(simulationId: number): Promise<SimulationDetails> {
+    return apiFetch<SimulationDetails>(`/simulations/${simulationId}`);
+};
+
+export function createSimulation(name: string): Promise<Response> {
+	return apiFetch<Response>("/simulations", {
+		method: "POST",
+		body: JSON.stringify({ name }),
+	});
+};
+
+export function deleteSimulation(simulationId: number): Promise<Response> {
+	return apiFetch<Response>(`/simulations/${simulationId}`, {
+		method: "DELETE",
+	});
+}
+
+export function updateSimulationName(simulationId: number, name: string): Promise<Response> {
+	return apiFetch<Response>(`/simulations/${simulationId}/name`, {
+		method: "PUT",
+		body: JSON.stringify({ name }),
+	});
+}
+
+export function startSimulation(simulationId: number): Promise<Response> {
+	return apiFetch<Response>(`/simulations/${simulationId}/start`, {
+		method: "POST",
+	});
+}
+
+export function stepSimulation(simulationId: number): Promise<Response> {
+	return apiFetch<Response>(`/simulations/${simulationId}/step`, {
+		method: "POST",
+	});
+}
+
+export function runSimulation(simulationId: number): Promise<Response> {
+	return apiFetch<Response>(`/simulations/${simulationId}/run`, {
+		method: "POST",
+	});
+}
+
+export function pauseSimulation(simulationId: number): Promise<Response> {
+	return apiFetch<Response>(`/simulations/${simulationId}/pause`, {
+		method: "POST",
+	});
+}
+
+export function stopSimulation(simulationId: number): Promise<Response> {
+	return apiFetch<Response>(`/simulations/${simulationId}/stop`, {
+		method: "POST",
+	});
+}
