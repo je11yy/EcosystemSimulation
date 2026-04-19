@@ -1,13 +1,15 @@
 import math
 import random
 from dataclasses import dataclass
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from ...engine.context import DecisionContext
 from ...enums import AgentActionType
 from ..actions import ActionOption, ScoredOption
 from ..observation import Observation, ObservedAgent, ObservedTerritory
 from .weights import PolicyScoreWeights
+
+if TYPE_CHECKING:
+    from ...engine.context import DecisionContext
 
 
 @dataclass
@@ -17,7 +19,7 @@ class SimpleSoftmaxPolicy:
 
     def choose_action(
         self,
-        context: DecisionContext,
+        context: "DecisionContext",
         rng: Optional[random.Random] = None,
     ) -> ActionOption:
         scored_options = self.score_options(context)
@@ -37,7 +39,7 @@ class SimpleSoftmaxPolicy:
 
         return scored_options[-1].option
 
-    def enumerate_options(self, context: DecisionContext) -> list[ActionOption]:
+    def enumerate_options(self, context: "DecisionContext") -> list[ActionOption]:
         agent = context.agent
         options = [ActionOption(type=AgentActionType.REST)]
 
@@ -61,13 +63,13 @@ class SimpleSoftmaxPolicy:
 
         return options
 
-    def score_options(self, context: DecisionContext) -> list[ScoredOption]:
+    def score_options(self, context: "DecisionContext") -> list[ScoredOption]:
         return [
             ScoredOption(option=option, utility=self.score_single_option(context, option))
             for option in self.enumerate_options(context)
         ]
 
-    def score_single_option(self, context: DecisionContext, option: ActionOption) -> float:
+    def score_single_option(self, context: "DecisionContext", option: ActionOption) -> float:
         if option.type == AgentActionType.EAT:
             utility = self.score_eat(context)
         elif option.type == AgentActionType.MOVE:
@@ -83,7 +85,7 @@ class SimpleSoftmaxPolicy:
 
         return utility - self._cost_penalty(context, option)
 
-    def score_eat(self, context: DecisionContext) -> float:
+    def score_eat(self, context: "DecisionContext") -> float:
         agent = context.agent
         traits = agent.state.traits
         hunger_need = self._ratio(agent.state.hunger, context.cost_calculator.cfg.hunger_max)
@@ -103,7 +105,7 @@ class SimpleSoftmaxPolicy:
             + min(1.0, traits.hunger_drive / 3) * self.weights.eat.hunger_drive
         )
 
-    def score_move(self, context: DecisionContext, option: ActionOption) -> float:
+    def score_move(self, context: "DecisionContext", option: ActionOption) -> float:
         target = self._find_territory(context.observation, option.to_territory)
         if target is None:
             return -1.0
@@ -137,7 +139,7 @@ class SimpleSoftmaxPolicy:
             - movement_cost_penalty * self.weights.move.movement_cost_penalty
         )
 
-    def score_mate(self, context: DecisionContext, option: ActionOption) -> float:
+    def score_mate(self, context: "DecisionContext", option: ActionOption) -> float:
         partner = self._find_agent(context.observation, option.partner_id)
         if partner is None:
             return -1.0
@@ -157,7 +159,7 @@ class SimpleSoftmaxPolicy:
             - hunger_pressure * self.weights.mate.hunger_penalty
         )
 
-    def score_hunt(self, context: DecisionContext, option: ActionOption) -> float:
+    def score_hunt(self, context: "DecisionContext", option: ActionOption) -> float:
         target = self._find_agent(context.observation, option.target_id)
         if target is None:
             return -1.0
@@ -178,7 +180,7 @@ class SimpleSoftmaxPolicy:
             + target_weakness * self.weights.hunt.target_weakness
         )
 
-    def score_rest(self, context: DecisionContext) -> float:
+    def score_rest(self, context: "DecisionContext") -> float:
         agent = context.agent
         hp_need = 1 - self._ratio(agent.state.hp, agent.state.max_hp)
         hunger_pressure = self._ratio(agent.state.hunger, context.cost_calculator.cfg.hunger_max)
@@ -188,7 +190,7 @@ class SimpleSoftmaxPolicy:
             - hunger_pressure * self.weights.rest.hunger_penalty
         )
 
-    def _mate_options(self, context: DecisionContext) -> list[ActionOption]:
+    def _mate_options(self, context: "DecisionContext") -> list[ActionOption]:
         return [
             ActionOption(type=AgentActionType.MATE, partner_id=partner.id)
             for partner in context.observation.agents
@@ -197,14 +199,14 @@ class SimpleSoftmaxPolicy:
             and partner.id != context.agent.state.id
         ]
 
-    def _hunt_options(self, context: DecisionContext) -> list[ActionOption]:
+    def _hunt_options(self, context: "DecisionContext") -> list[ActionOption]:
         return [
             ActionOption(type=AgentActionType.HUNT, target_id=target.id)
             for target in context.observation.agents
             if target.is_alive and target.id != context.agent.state.id
         ]
 
-    def _cost_penalty(self, context: DecisionContext, option: ActionOption) -> float:
+    def _cost_penalty(self, context: "DecisionContext", option: ActionOption) -> float:
         cost = context.cost_calculator.calculate(context.agent.state, option)
         hunger_penalty = self._ratio(cost.hunger, context.cost_calculator.cfg.hunger_max)
         hp_penalty = self._ratio(cost.hp, context.agent.state.max_hp)

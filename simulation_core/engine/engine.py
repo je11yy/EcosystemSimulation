@@ -1,8 +1,8 @@
 import random
 
-from ..agent import SimpleSoftmaxPolicy
 from ..agent.actions import ActionOption
 from ..agent.observer import AgentObserver
+from ..agent.policy.simple_softmax import SimpleSoftmaxPolicy
 from ..agent.registry import Agent, AgentRegistry
 from ..config import SimConfig
 from ..enums import AgentActionType
