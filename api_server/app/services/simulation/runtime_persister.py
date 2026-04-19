@@ -36,6 +36,7 @@ class RuntimeSnapshotPersister:
                 agent_decisions=self._decision_payloads(result.get("decisions", [])),
                 step_result=result.get("step", {}),
                 metrics=result.get("metrics", {}),
+                events=self._event_payloads(result),
             )
         )
 
@@ -227,6 +228,15 @@ class RuntimeSnapshotPersister:
                 }
             )
         return payloads
+
+    def _event_payloads(self, result: dict) -> dict:
+        return {
+            "applied_results": result.get("applied_results", []),
+            "deaths": result.get("deaths", []),
+            "births": result.get("births", []),
+            "fights": result.get("fights", []),
+            "hunts": result.get("hunts", []),
+        }
 
     async def _sync_sequence(self, table: str, column: str) -> None:
         await self.session.execute(

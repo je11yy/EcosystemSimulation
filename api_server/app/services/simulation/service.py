@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import SimulationStatus
-from app.mappers.simulation import simulation_details_to_dict, simulation_to_dict
+from app.mappers.simulation import log_to_dict, simulation_details_to_dict, simulation_to_dict
 from app.models import Simulation
 from app.models.relations.simulation_user import SimulationUserRelation
 from app.repositories.simulation import SimulationRepository
@@ -36,6 +36,14 @@ class SimulationService:
         if simulation is None:
             raise HTTPException(status_code=404, detail="Simulation not found")
         return simulation_details_to_dict(simulation, territories, edges)
+
+    async def get_logs(self, user_id: int, simulation_id: int) -> list[dict]:
+        await self.runtime_orchestrator.sync_runtime(user_id, simulation_id)
+        simulation = await self._get_owned(user_id, simulation_id)
+        return [
+            log_to_dict(log)
+            for log in sorted(simulation.logs, key=lambda simulation_log: simulation_log.tick)
+        ]
 
     async def delete(self, user_id: int, simulation_id: int) -> None:
         simulation = await self._get_owned(user_id, simulation_id)

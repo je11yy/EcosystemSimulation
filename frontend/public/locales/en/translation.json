@@ -6,7 +6,131 @@
     "genome": "Genome",
     "genomes": "Genomes",
     "genome_name": "Genome name",
+    "gene": "Gene",
+    "gene_name": "Gene name",
+    "add_gene": "Add gene",
+    "create_edge": "Create edge",
+    "cancel_edge_mode": "Cancel edge mode",
+    "select_source_node": "Select the first edge node",
+    "select_target_node": "Select the second edge node",
+    "source": "Source",
+    "target": "Target",
+    "weight": "Weight",
     "territory": "Territory",
+    "agents": "Agents",
+    "simulation": "Simulation",
+    "create_territory": "Create territory",
+    "create_agent": "Create agent",
+    "view_logs": "View logs",
+    "simulation_logs": "Simulation logs",
+    "showing_last_logs": "Showing last {{count}} of {{total}} ticks.",
+    "download": "Download",
+    "agent_actions": "Agent actions",
+    "action_results": "Action results",
+    "no_action_results": "No action results.",
+    "no_deaths": "No deaths.",
+    "no_births": "No births.",
+    "no_fights": "No fights.",
+    "no_hunts": "No hunts.",
+    "to_territory": "territory",
+    "partner": "partner",
+    "without_genome": "Without genome",
+    "food": "Food",
+    "temperature": "Temperature",
+    "food_regen_per_tick": "Food regeneration per tick",
+    "food_capacity": "Food capacity",
+    "effectType": "Effect",
+    "threshold": "Activation threshold",
+    "gene_weight": "Gene strength",
+    "default_active": "Active by default",
+    "default_active_hint": "When enabled, the gene works all the time and skips the activation threshold.",
+    "gene_effect_meta": {
+        "default": {
+            "description": "The gene effect changes an agent trait or behavior.",
+            "threshold": "The threshold defines when the gene becomes active.",
+            "weight": "Strength controls how visible the active gene's influence is."
+        },
+        "MAX_HP": {
+            "description": "Changes the agent's maximum health.",
+            "threshold": "This gene is treated as baseline physiology and is always active unless simulation logic disables it. The threshold is not used right now.",
+            "weight": "Multiplier for maximum health. For example, 1.2 increases max hp by 20%."
+        },
+        "STRENGTH": {
+            "description": "Changes the agent's strength in hunting and conflicts.",
+            "threshold": "This gene is treated as baseline physiology and is always active unless simulation logic disables it. The threshold is not used right now.",
+            "weight": "Multiplier for base strength. Values below 1 weaken it, values above 1 strengthen it."
+        },
+        "DEFENSE": {
+            "description": "Changes the agent's defense and reduces received damage.",
+            "threshold": "This gene is treated as baseline physiology and is always active unless simulation logic disables it. The threshold is not used right now.",
+            "weight": "Multiplier for base defense. Values below 1 weaken it, values above 1 strengthen it."
+        },
+        "METABOLISM": {
+            "description": "Changes action costs and energy spending.",
+            "threshold": "This gene is treated as baseline physiology and is always active unless simulation logic disables it. The threshold is not used right now.",
+            "weight": "Multiplier for metabolism. Higher values make actions more expensive."
+        },
+        "HUNGER_DRIVE": {
+            "description": "Increases the drive to seek and consume food.",
+            "threshold": "The gene activates when the agent's hunger is greater than or equal to this value.",
+            "weight": "Higher strength makes eating more attractive and feel cheaper."
+        },
+        "DISPERSAL_DRIVE": {
+            "description": "Increases the drive to leave the current territory.",
+            "threshold": "The gene activates on low satisfaction, high local density, or strong temperature discomfort.",
+            "weight": "Higher strength makes movement more attractive and feel cheaper."
+        },
+        "SITE_FIDELITY": {
+            "description": "Increases the drive to stay on the current territory.",
+            "threshold": "The gene activates when satisfaction is at least this value and the temperature is comfortable enough.",
+            "weight": "Higher strength makes staying and resting more attractive."
+        },
+        "REPRODUCTION_DRIVE": {
+            "description": "Increases the drive to mate.",
+            "threshold": "The gene activates when the agent is not pregnant and satisfaction is greater than or equal to this value.",
+            "weight": "Higher strength makes mating more attractive and feel cheaper."
+        },
+        "HEAT_RESISTANCE": {
+            "description": "Helps the agent tolerate hot territories.",
+            "threshold": "The gene activates when the current territory temperature is greater than or equal to this value.",
+            "weight": "Strength controls how much the gene reduces heat penalties."
+        },
+        "COLD_RESISTANCE": {
+            "description": "Helps the agent tolerate cold territories.",
+            "threshold": "The gene activates when the current territory temperature is less than or equal to this value.",
+            "weight": "Strength controls how much the gene reduces cold penalties."
+        },
+        "AGGRESSION_DRIVE": {
+            "description": "Increases the drive to fight for resources.",
+            "threshold": "The gene activates when hunger or local density is greater than or equal to this value.",
+            "weight": "Higher strength makes aggressive actions more attractive."
+        },
+        "PREDATION_DRIVE": {
+            "description": "Increases the drive to hunt.",
+            "threshold": "The gene activates when hunger is at least this value and other agents are nearby.",
+            "weight": "Higher strength makes hunting more attractive and feel cheaper."
+        },
+        "CARNIVORE_DIGESTION": {
+            "description": "Improves the benefit from successful hunting.",
+            "threshold": "The gene activates when the agent's hunger is greater than or equal to this value.",
+            "weight": "Higher strength increases the benefit gained from prey."
+        },
+        "CANNIBAL_TOLERANCE": {
+            "description": "Increases willingness to attack genetically similar agents.",
+            "threshold": "The gene activates when hunger is at least this value and other agents are nearby.",
+            "weight": "Higher strength makes genetic similarity less protective against attacks."
+        },
+        "SOCIAL_TOLERANCE": {
+            "description": "Helps the agent tolerate many agents on one territory.",
+            "threshold": "The gene activates when the number of agents on the current territory is greater than or equal to this value.",
+            "weight": "Strength controls how tolerant the agent is to population density."
+        },
+        "MUTATION_RATE": {
+            "description": "Changes the probability of genome mutations in offspring.",
+            "threshold": "This gene is treated as a baseline genome property and is always active. The threshold is not used right now.",
+            "weight": "Multiplier for mutation probabilities. 1 keeps the base level, 1.5 raises it by 50%, 0.5 halves it."
+        }
+    },
     "health": "Health",
     "hunger": "Hunger",
     "strength": "Strength",
@@ -15,15 +139,63 @@
     "satisfaction": "Satisfaction",
     "pregnant": "Pregnant",
     "ticks_to_birth": "Ticks to Birth",
-    "start": "Start",
+    "start": "Build",
     "step": "Step",
     "run": "Run",
     "pause": "Pause",
     "stop": "Stop",
+    "latest_step": "Latest step",
+    "simulation_status": "Status",
+    "tick": "Tick",
+    "no_step_result": "No step results yet. Press “Step” or “Run”.",
+    "metrics": "Metrics",
+    "metrics_history": "Metrics history",
+    "not_enough_metrics_history": "At least two ticks are needed to draw charts.",
+    "ticks_short": "ticks",
+    "population_and_resources": "Population and resources",
+    "agent_condition": "Agent condition",
+    "decisions": "Agent decisions",
+    "no_decisions": "There are no agent decisions for this step.",
+    "alive_population": "Alive population",
+    "avg_hunger": "Average hunger",
+    "avg_satisfaction": "Average satisfaction",
+    "consumed_food": "Consumed food",
+    "successful_hunts": "Successful hunts",
+    "unsuccessful_hunts": "Unsuccessful hunts",
+    "eat": "Eat",
+    "move": "Move",
+    "mate": "Mate",
+    "rest": "Rest",
+    "hunt": "Hunt",
+    "births": "Births",
+    "deaths": "Deaths",
+    "fights": "Fights",
     "simulations": "Simulations",
     "simulation_name": "Simulation name",
+    "scenario_presets": "Scenario presets",
+    "scenario_presets_hint": "Create a personal simulation copy with territories, agents, and protected genome templates.",
+    "create_from_scenario": "Create scenario",
+    "template": "Template",
+    "template_genome_readonly": "This is a genome template. It can be used in simulations, but cannot be edited or deleted.",
     "create": "Create",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "delete_agent": "Delete agent",
+    "open_agent_genome": "Open genome",
+    "hide_details": "Hide details",
+    "close": "Close",
+    "login": "Log in",
+    "logout": "Log out",
+    "register": "Register",
+    "nickname": "Nickname",
+    "password": "Password",
+    "create_account": "Create account",
+    "already_have_account": "Already have an account",
+    "auth_error": "Authentication error",
     "loading": "Loading",
     "error_loading_simulations": "Error loading simulations",
-    "error_loading_genomes": "Error loading genomes"
+    "error_loading_genomes": "Error loading genomes",
+    "error_loading_genome": "Error loading genome"
 }

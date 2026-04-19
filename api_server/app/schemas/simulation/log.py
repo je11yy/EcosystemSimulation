@@ -37,12 +37,21 @@ class TickMetrics(BaseModel):
     consumed_food: int = 0
 
 
+class StepEvents(BaseModel):
+    applied_results: List[Dict[str, Any]] = Field(default_factory=list)
+    deaths: List[Dict[str, Any]] = Field(default_factory=list)
+    births: List[Dict[str, Any]] = Field(default_factory=list)
+    fights: List[Dict[str, Any]] = Field(default_factory=list)
+    hunts: List[Dict[str, Any]] = Field(default_factory=list)
+
+
 class SimulationLogCreate(BaseModel):
     simulation_id: int
     tick: int
     agent_decisions: List[AgentDecision] = Field(default_factory=list)
     step_result: StepResult = Field(default_factory=StepResult)
     metrics: TickMetrics = Field(default_factory=TickMetrics)
+    events: StepEvents = Field(default_factory=StepEvents)
 
 
 class SimulationLogRead(SimulationLogCreate):

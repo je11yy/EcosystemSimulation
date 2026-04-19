@@ -28,6 +28,7 @@ class SimulationLog(Base):
     agent_decisions: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
     step_result: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     metrics: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    events: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     simulation: Mapped["Simulation"] = relationship(back_populates="logs")

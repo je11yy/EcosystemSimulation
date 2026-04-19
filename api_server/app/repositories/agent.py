@@ -32,6 +32,7 @@ class AgentRepository(Repository):
             )
             .where(SimulationAgentRelation.simulation_id == simulation_id)
             .where(SimulationTerritoryRelation.simulation_id == simulation_id)
+            .where(Agent.is_alive.is_(True))
             .options(
                 selectinload(Agent.territory_links),
                 selectinload(Agent.genome_links),

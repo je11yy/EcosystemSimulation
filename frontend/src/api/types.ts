@@ -51,6 +51,14 @@ export interface TickMetrics {
     consumed_food: number;
 }
 
+export interface StepEvents {
+    applied_results: Array<Record<string, unknown>>;
+    deaths: Array<Record<string, unknown>>;
+    births: Array<Record<string, unknown>>;
+    fights: Array<Record<string, unknown>>;
+    hunts: Array<Record<string, unknown>>;
+}
+
 export interface AgentDecision {
     agent_id: number;
     action: "eat" | "move" | "mate" | "rest" | "hunt";
@@ -67,6 +75,7 @@ export interface Log {
     agent_decisions: AgentDecision[];
     step_result: Step;
     metrics: TickMetrics;
+    events: StepEvents;
     created_at: string;
 }
 
@@ -87,6 +96,7 @@ export interface SimulationDetails extends Simulation {
 
     last_log: Log | null;
     logs: Log[];
+    logs_count: number;
     last_step: Step | null;
 };
 
@@ -101,6 +111,7 @@ export interface AgentCreate {
 
 export interface Agent extends AgentCreate {
     id: number;
+    is_alive: boolean;
 
     hunger: number;
     hp: number;

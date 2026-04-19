@@ -15,6 +15,7 @@ def log_to_dict(log: SimulationLog | None) -> dict[str, Any] | None:
         "agent_decisions": log.agent_decisions,
         "step_result": log.step_result,
         "metrics": log.metrics,
+        "events": log.events,
         "created_at": iso(log.created_at),
     }
 
@@ -37,11 +38,13 @@ def simulation_details_to_dict(
 ) -> dict[str, Any]:
     last_log = simulation.last_log
     logs = sorted(simulation.logs, key=lambda log: log.tick)
+    visible_logs = logs[-20:]
     return {
         **simulation_to_dict(simulation),
         "territories": [territory_to_dict(territory) for territory in territories],
         "territories_edges": [territory_edge_to_dict(edge) for edge in edges],
         "last_log": log_to_dict(last_log),
-        "logs": [log_to_dict(log) for log in logs],
+        "logs": [log_to_dict(log) for log in visible_logs],
+        "logs_count": len(logs),
         "last_step": last_log.step_result if last_log else None,
     }

@@ -2,6 +2,7 @@ import type { Gene } from "../gene/types";
 
 export type Agent = {
     id: number;
+    is_alive: boolean;
 
     sex: string;
     genome: Gene[];

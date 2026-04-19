@@ -17,11 +17,12 @@ import { NewEdgeWeight } from "src/components/forms/Edge";
 import { Controls } from "src/components/simulation/Controls";
 import { StepResult } from "src/components/simulation/StepResult";
 import { MetricsCharts } from "src/components/simulation/MetricsCharts";
+import { SimulationLogsModal } from "src/components/simulation/LogsModal";
 import { useTerritoryMutations } from "src/hooks/territories/useTerritoryMutations";
 import { useAgentMutations } from "src/hooks/agents/useAgentMutations";
 import { useSimulationControlMutations } from "src/hooks/simulations/useSimulationMutations";
 
-type SimulationModal = "territory" | "edge-weight" | "agent" | null;
+type SimulationModal = "territory" | "edge-weight" | "agent" | "logs" | null;
 type EdgeDraft = { source: number; target: number } | null;
 
 export function SimulationPage() {
@@ -158,6 +159,9 @@ export function SimulationPage() {
                 >
                     {t("create_agent")}
                 </button>
+                <button type="button" onClick={() => setActiveModal("logs")}>
+                    {t("view_logs")}
+                </button>
             </div>
             {isEdgeMode && (
                 <p>
@@ -188,6 +192,15 @@ export function SimulationPage() {
                 />
             </div>
             <MetricsCharts logs={simulationQuery.data?.logs ?? []} />
+            {activeModal === "logs" && (
+                <Modal title={t("simulation_logs")} onClose={() => setActiveModal(null)}>
+                    <SimulationLogsModal
+                        simulationId={simulationId}
+                        logs={simulationQuery.data?.logs ?? []}
+                        logsCount={simulationQuery.data?.logs_count ?? 0}
+                    />
+                </Modal>
+            )}
             {activeModal === "territory" && (
                 <Modal title={t("create_territory")} onClose={() => setActiveModal(null)}>
                     <NewTerritory
@@ -297,7 +310,7 @@ export function SimulationPage() {
                         </>
                     )}
                     <h2>{t('agents')}</h2>
-                    {agents.filter((agent: Agent) => agent.territory_id === selectedTerritory.id).map((agent: Agent) => (
+                    {agents.filter((agent: Agent) => agent.is_alive && agent.territory_id === selectedTerritory.id).map((agent: Agent) => (
                         <AgentSmallDetails
                             key={agent.id}
                             agent={agent}

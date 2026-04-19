@@ -2,7 +2,13 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, DbSession
-from app.schemas import Response, SimulationCreate, SimulationDetails, SimulationRead
+from app.schemas import (
+    Response,
+    SimulationCreate,
+    SimulationDetails,
+    SimulationLogRead,
+    SimulationRead,
+)
 from app.services.scenario import ScenarioService
 from app.services.simulation.service import SimulationService
 
@@ -64,6 +70,15 @@ async def get_simulation(
     db: DbSession,
 ) -> dict:
     return await SimulationService(db).get_details(current_user.id, simulation_id)
+
+
+@router.get("/{simulation_id}/logs", response_model=list[SimulationLogRead])
+async def get_simulation_logs(
+    simulation_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> list[dict]:
+    return await SimulationService(db).get_logs(current_user.id, simulation_id)
 
 
 @router.delete("/{simulation_id}", response_model=Response)

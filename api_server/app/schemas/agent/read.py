@@ -27,6 +27,7 @@ class AgentResponse(BaseModel):
     sex: AgentSex
     territory_id: int
     genome_id: Optional[int] = None
+    is_alive: bool
     hunger: float
     hp: float
     strength: float

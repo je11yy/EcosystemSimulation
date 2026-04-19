@@ -9,6 +9,7 @@ def agent_to_dict(agent: Agent) -> dict[str, Any]:
         "sex": agent.sex,
         "territory_id": agent.territory_id,
         "genome_id": agent.genome_id,
+        "is_alive": agent.is_alive,
         "hunger": agent.hunger,
         "hp": agent.hp,
         "strength": agent.strength,

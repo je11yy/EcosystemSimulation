@@ -5,6 +5,7 @@ import type {
     ScenarioPreset,
     Simulation,
     SimulationDetails,
+    Log,
 } from "./types";
 
 export function getSimulations(): Promise<Simulation[]> {
@@ -13,6 +14,10 @@ export function getSimulations(): Promise<Simulation[]> {
 
 export function getSimulation(simulationId: number): Promise<SimulationDetails> {
     return apiFetch<SimulationDetails>(`/simulations/${simulationId}`);
+};
+
+export function getSimulationLogs(simulationId: number): Promise<Log[]> {
+    return apiFetch<Log[]>(`/simulations/${simulationId}/logs`);
 };
 
 export function createSimulation(name: string): Promise<Response> {

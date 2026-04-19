@@ -43,6 +43,7 @@ class SimulationDetails(SimulationRead):
     territories_edges: list[TerritoryEdgeResponse]
     last_log: Optional[SimulationLogRead] = None
     logs: list[SimulationLogRead] = Field(default_factory=list)
+    logs_count: int = 0
     last_step: Optional[dict] = None
 
 
