@@ -10,14 +10,10 @@ from .log import SimulationLogRead
 
 
 class SimulationBase(BaseModel):
-    """Base simulation model."""
-
     name: str
 
 
 class SimulationRead(SimulationBase):
-    """Simulation list/read response."""
-
     id: int
     user_id: int
     updated_at: datetime
@@ -29,8 +25,6 @@ class SimulationRead(SimulationBase):
 
 
 class TerritoryResponse(Node):
-    """Territory with all data."""
-
     food: float
     temperature: float
     food_regen_per_tick: float
@@ -38,8 +32,6 @@ class TerritoryResponse(Node):
 
 
 class TerritoryEdgeResponse(BaseModel):
-    """Territory edge response."""
-
     id: int
     source: int
     target: int
@@ -47,8 +39,6 @@ class TerritoryEdgeResponse(BaseModel):
 
 
 class SimulationDetails(SimulationRead):
-    """Simulation with all details."""
-
     territories: list[TerritoryResponse]
     territories_edges: list[TerritoryEdgeResponse]
     last_log: Optional[SimulationLogRead] = None
@@ -56,8 +46,6 @@ class SimulationDetails(SimulationRead):
 
 
 class SimulationLogListItem(BaseModel):
-    """Compact simulation log item for history lists."""
-
     id: int
     simulation_id: int
     tick: int

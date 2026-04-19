@@ -11,6 +11,7 @@ export const GenomeGraphComponent = ({
     selectedEdgeId = null,
     onEdgeClick,
     onNodePositionChange,
+    canDragNodes,
 }: Props) => {
     return <GraphComponent
         graph={graph}
@@ -21,8 +22,9 @@ export const GenomeGraphComponent = ({
         selectedEdgeId={selectedEdgeId}
         onEdgeClick={onEdgeClick}
         onNodePositionChange={onNodePositionChange}
+        canDragNodes={canDragNodes}
         getNodeColor={(node) => {
             const gene = node as Gene;
-            return gene.is_active ? 'lightgreen' : 'lightgray';
+            return gene.default_active ? 'lightgreen' : 'lightgray';
         }} />
 }  

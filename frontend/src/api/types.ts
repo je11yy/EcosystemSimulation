@@ -2,6 +2,8 @@ import type { Gene } from "src/components/gene/types";
 import type { Edge, Position } from "src/components/graph/types";
 import type { Territory } from "src/components/territory/types";
 
+export type { Position } from "src/components/graph/types";
+
 // basic types
 
 export type Response = {
@@ -104,6 +106,7 @@ export interface Agent extends AgentCreate {
 // territories
 
 export interface TerritoryCreate {
+    food?: number;
     food_capacity: number;
     food_regen_per_tick: number;
     temperature: number;
@@ -121,6 +124,40 @@ export interface TerritoryEdgeCreate {
 
 export interface TerritoryEdge extends TerritoryEdgeCreate {
     id: number;
+}
+
+// genes
+
+export type GeneEffectType =
+    | "MAX_HP"
+    | "STRENGTH"
+    | "DEFENSE"
+    | "METABOLISM"
+    | "HUNGER_DRIVE"
+    | "DISPERSAL_DRIVE"
+    | "SITE_FIDELITY"
+    | "REPRODUCTION_DRIVE"
+    | "HEAT_RESISTANCE"
+    | "COLD_RESISTANCE"
+    | "AGGRESSION_DRIVE"
+    | "PREDATION_DRIVE"
+    | "CARNIVORE_DIGESTION"
+    | "CANNIBAL_TOLERANCE"
+    | "SOCIAL_TOLERANCE";
+
+export interface GeneCreate {
+    name: string;
+    effect_type: GeneEffectType | string;
+    weight: number;
+    threshold: number;
+    position: Position;
+    default_active: boolean;
+}
+
+export interface GeneEdgeCreate {
+    source: number;
+    target: number;
+    weight: number;
 }
 
 // genomes

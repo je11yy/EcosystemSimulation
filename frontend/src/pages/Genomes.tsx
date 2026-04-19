@@ -3,6 +3,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { getGenomes } from "src/api/genomes";
 import { useTranslation } from "react-i18next";
 import { useGenomesListMutations } from "src/hooks/genomes/useGenomeMutations";
@@ -29,7 +30,9 @@ export function GenomesPage() {
                 <ul>
                     {genomesQuery.data.map(genome => (
                         <li key={genome.id}>
-                            {genome.name}
+                            <Link to={`/genomes/${genome.id}`}>
+                                {genome.name}
+                            </Link>
                         </li>
                     ))}
                 </ul>

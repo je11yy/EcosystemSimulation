@@ -26,7 +26,7 @@ class TerritoryService:
         await get_or_404(self.session, Simulation, payload.simulation_id, "Simulation")
 
         territory = Territory(
-            food=payload.food_capacity,
+            food=payload.food if payload.food is not None else payload.food_capacity,
             food_capacity=payload.food_capacity,
             food_regen_per_tick=payload.food_regen_per_tick,
             temperature=payload.temperature,
@@ -45,11 +45,16 @@ class TerritoryService:
 
     async def delete(self, territory_id: int) -> None:
         territory = await get_or_404(self.session, Territory, territory_id, "Territory")
+        agents = [link.agent for link in territory.agent_links]
+        for agent in agents:
+            await self.session.delete(agent)
         await self.session.delete(territory)
         await self.session.commit()
 
     async def update(self, territory_id: int, payload: TerritoryCreate) -> None:
         territory = await get_or_404(self.session, Territory, territory_id, "Territory")
+        if payload.food is not None:
+            territory.food = payload.food
         territory.food_capacity = payload.food_capacity
         territory.food_regen_per_tick = payload.food_regen_per_tick
         territory.temperature = payload.temperature

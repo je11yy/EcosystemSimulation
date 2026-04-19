@@ -6,8 +6,7 @@ from ..base import Position
 
 
 class TerritoryCreate(BaseModel):
-    """Territory create request"""
-
+    food: Optional[float] = None
     food_capacity: float
     food_regen_per_tick: float
     temperature: float
@@ -16,8 +15,6 @@ class TerritoryCreate(BaseModel):
 
 
 class TerritoryRead(TerritoryCreate):
-    """Territory read response"""
-
     id: int
     food: float
 
@@ -26,8 +23,6 @@ class TerritoryRead(TerritoryCreate):
 
 
 class TerritoryEdgeCreate(BaseModel):
-    """Territory edge create request"""
-
     source: int
     target: int
     weight: float
@@ -35,8 +30,6 @@ class TerritoryEdgeCreate(BaseModel):
 
 
 class TerritoryEdgeRead(TerritoryEdgeCreate):
-    """Territory edge read response"""
-
     id: int
 
     class Config:

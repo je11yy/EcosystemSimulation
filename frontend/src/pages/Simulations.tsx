@@ -3,6 +3,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { getSimulations } from "src/api/simulations";
 import { useTranslation } from "react-i18next";
 import { useSimulationsListMutations } from "src/hooks/simulations/useSimulationMutations";
@@ -29,7 +30,9 @@ export function SimulationsPage() {
                 <ul>
                     {simulationsQuery.data.map(simulation => (
                         <li key={simulation.id}>
-                            {simulation.name}
+                            <Link to={`/simulations/${simulation.id}`}>
+                                {simulation.name}
+                            </Link>
                         </li>
                     ))}
                 </ul>

@@ -5,8 +5,12 @@ import { AppProviders } from "./app/providers";
 export function App() {
     return (
         <AppProviders>
-            <Menu />
-            <Outlet />
+            <div className="app-shell">
+                <Menu />
+                <main className="app-main">
+                    <Outlet />
+                </main>
+            </div>
         </AppProviders>
     );
 }

@@ -3,20 +3,16 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from .edge import GeneEdge
-from .gene import Gene
+from .edge import GeneEdge, GeneEdgeCreate
+from .gene import Gene, GeneCreate
 
 
 class AvailableGenome(BaseModel):
-    """Available genome basic info"""
-
     id: int
     name: str
 
 
 class GenomeRead(AvailableGenome):
-    """Genome read response with genes and edges"""
-
     genes: List[Gene] = []
     edges: List[GeneEdge] = []
 
@@ -25,8 +21,6 @@ class GenomeRead(AvailableGenome):
 
 
 class GenomeList(BaseModel):
-    """Genome list item with metadata"""
-
     id: int
     name: str
     user_id: int
@@ -37,7 +31,17 @@ class GenomeList(BaseModel):
 
 
 class GenomeCreate(BaseModel):
-    """Genome create request"""
-
     name: str
     user_id: Optional[int] = None
+
+
+__all__ = [
+    "AvailableGenome",
+    "Gene",
+    "GeneCreate",
+    "GeneEdge",
+    "GeneEdgeCreate",
+    "GenomeCreate",
+    "GenomeList",
+    "GenomeRead",
+]

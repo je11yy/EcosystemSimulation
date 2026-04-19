@@ -7,10 +7,12 @@ from app.models import Gene, GeneEdge, Genome
 def gene_to_dict(gene: Gene) -> dict[str, Any]:
     return {
         "id": gene.id,
+        "name": gene.name,
         "position": position(gene.x, gene.y),
         "effect_type": gene.effect_type,
         "threshold": gene.threshold,
-        "is_active": gene.is_active,
+        "weight": gene.weight,
+        "default_active": gene.default_active,
     }
 
 

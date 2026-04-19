@@ -19,9 +19,14 @@ class Gene(Base):
     __table_args__ = (
         CheckConstraint(
             "effect_type IN "
-            "('hunger', 'hp', 'strength', 'defense', 'temp_pref', 'satisfaction', 'hunt_cooldown')",
+            "('MAX_HP', 'STRENGTH', 'DEFENSE', 'METABOLISM', 'HUNGER_DRIVE', "
+            "'DISPERSAL_DRIVE', 'SITE_FIDELITY', 'REPRODUCTION_DRIVE', "
+            "'HEAT_RESISTANCE', 'COLD_RESISTANCE', 'AGGRESSION_DRIVE', "
+            "'PREDATION_DRIVE', 'CARNIVORE_DIGESTION', 'CANNIBAL_TOLERANCE', "
+            "'SOCIAL_TOLERANCE')",
             name="ck_genes_effect_type",
         ),
+        CheckConstraint("weight >= 0", name="ck_genes_weight_non_negative"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -34,8 +39,11 @@ class Gene(Base):
     x: Mapped[float] = mapped_column(Float, default=0.0)
     y: Mapped[float] = mapped_column(Float, default=0.0)
     default_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Порог активации: значение условия, после которого ген начинает работать
+    # или сильнее влияет на поведение/признак.
     threshold: Mapped[float] = mapped_column(Float, default=0.0)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Сила гена: множитель для статовых эффектов и вес для поведенческих эффектов.
+    weight: Mapped[float] = mapped_column(Float, default=1.0)
 
     genome_links: Mapped[list["GenomeGeneRelation"]] = relationship(
         back_populates="gene",

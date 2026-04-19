@@ -27,6 +27,18 @@ class GenomeRepository(Repository):
         )
         return list((await self.session.scalars(stmt)).unique().all())
 
+    async def get_owned(self, genome_id: int, user_id: int) -> Genome | None:
+        stmt = (
+            select(Genome)
+            .join(GenomeUserRelation, GenomeUserRelation.genome_id == Genome.id)
+            .where(Genome.id == genome_id, GenomeUserRelation.user_id == user_id)
+            .options(
+                selectinload(Genome.user_links),
+                selectinload(Genome.gene_links).selectinload(GenomeGeneRelation.gene),
+            )
+        )
+        return await self.session.scalar(stmt)
+
     async def get_with_graph(self, genome_id: int) -> Genome | None:
         stmt = (
             select(Genome)

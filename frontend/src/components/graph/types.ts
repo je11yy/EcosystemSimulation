@@ -30,4 +30,5 @@ export type Props = {
 	onEdgeClick: (edgeId: number) => void;
 	onNodePositionChange: (nodeId: number, position: Position) => void;
 	getNodeColor?: (node: Node) => string;
+	canDragNodes?: boolean;
 };

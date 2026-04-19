@@ -48,7 +48,6 @@ def upgrade() -> None:
         sa.Column("y", sa.Float(), nullable=False),
         sa.Column("default_active", sa.Boolean(), nullable=False),
         sa.Column("threshold", sa.Float(), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.CheckConstraint(
             "effect_type IN "
             "('hunger', 'hp', 'strength', 'defense', 'temp_pref', 'satisfaction', 'hunt_cooldown')",

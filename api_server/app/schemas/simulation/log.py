@@ -7,8 +7,6 @@ from app.enums import AgentActionType
 
 
 class AgentDecision(BaseModel):
-    """Chosen action for a single agent during one tick."""
-
     agent_id: int
     action: AgentActionType
     to_territory: Optional[int] = None
@@ -18,8 +16,6 @@ class AgentDecision(BaseModel):
 
 
 class StepResult(BaseModel):
-    """Aggregated action/result counters for a single tick."""
-
     eat: int = 0
     move: int = 0
     mate: int = 0
@@ -31,8 +27,6 @@ class StepResult(BaseModel):
 
 
 class TickMetrics(BaseModel):
-    """Computed metrics after a tick is applied."""
-
     alive_population: int = 0
     avg_hunger: float = 0.0
     occupancy_by_territory: Dict[int, int] = Field(default_factory=dict)
@@ -43,8 +37,6 @@ class TickMetrics(BaseModel):
 
 
 class SimulationLogCreate(BaseModel):
-    """Full log payload for a single simulation tick."""
-
     simulation_id: int
     tick: int
     agent_decisions: List[AgentDecision] = Field(default_factory=list)
@@ -53,8 +45,6 @@ class SimulationLogCreate(BaseModel):
 
 
 class SimulationLogRead(SimulationLogCreate):
-    """Persisted simulation tick log."""
-
     id: int
     created_at: datetime
 

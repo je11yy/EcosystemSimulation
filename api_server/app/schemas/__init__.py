@@ -1,14 +1,10 @@
-"""
-Pydantic schemas for API request/response validation
-"""
-
 from .agent.create import AgentCreate
 from .agent.read import AgentRead, AgentResponse
 from .auth import AuthCredentials, UserRead
 from .base import Node, Position, Response
 from .genome import AvailableGenome, GenomeCreate, GenomeList, GenomeRead
-from .genome.edge import GeneEdge
-from .genome.gene import Gene
+from .genome.edge import GeneEdge, GeneEdgeCreate
+from .genome.gene import Gene, GeneCreate
 from .simulation.create import SimulationCreate
 from .simulation.log import (
     AgentDecision,
@@ -62,7 +58,9 @@ __all__ = [
     "TerritoryEdge",
     # Genome
     "Gene",
+    "GeneCreate",
     "GeneEdge",
+    "GeneEdgeCreate",
     "AvailableGenome",
     "GenomeRead",
     "GenomeList",

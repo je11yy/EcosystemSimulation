@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ModalProps {
     title: string;
@@ -7,12 +8,20 @@ interface ModalProps {
 }
 
 export function Modal({ title, onClose, children }: ModalProps) {
+    const { t } = useTranslation();
+
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <h2>{title}</h2>
-                {children}
-                <button onClick={onClose}>Close</button>
+                <div className="modal-header">
+                    <h2>{title}</h2>
+                    <button className="icon-button" type="button" onClick={onClose} aria-label={t("close")}>
+                        X
+                    </button>
+                </div>
+                <div className="modal-body">
+                    {children}
+                </div>
             </div>
         </div>
     );

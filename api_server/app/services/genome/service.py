@@ -2,10 +2,11 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.mappers.genome import genome_list_item_to_dict, genome_to_dict
-from app.models import Genome
+from app.models import Gene, GeneEdge, Genome
+from app.models.relations.genome_gene import GenomeGeneRelation
 from app.models.relations.genome_user import GenomeUserRelation
 from app.repositories.genome.genome import GenomeRepository
-from app.schemas import GenomeCreate
+from app.schemas import GeneCreate, GeneEdgeCreate, GenomeCreate, Position
 
 
 class GenomeService:
@@ -33,3 +34,93 @@ class GenomeService:
         if genome is None:
             raise HTTPException(status_code=404, detail="Genome not found")
         return genome_to_dict(genome)
+
+    async def create_gene(self, genome_id: int, user_id: int, payload: GeneCreate) -> None:
+        genome = await self.genomes.get_owned(genome_id, user_id)
+        if genome is None:
+            raise HTTPException(status_code=404, detail="Genome not found")
+
+        gene = Gene(
+            name=payload.name,
+            effect_type=payload.effect_type.value,
+            threshold=payload.threshold,
+            weight=payload.weight,
+            x=payload.position.x,
+            y=payload.position.y,
+            default_active=payload.default_active,
+        )
+        self.session.add(gene)
+        await self.session.flush()
+        self.session.add(GenomeGeneRelation(genome_id=genome.id, gene_id=gene.id))
+        await self.session.commit()
+
+    async def update_gene(
+        self,
+        genome_id: int,
+        gene_id: int,
+        user_id: int,
+        payload: GeneCreate,
+    ) -> None:
+        gene = await self._get_owned_gene(genome_id, gene_id, user_id)
+        gene.name = payload.name
+        gene.effect_type = payload.effect_type.value
+        gene.threshold = payload.threshold
+        gene.weight = payload.weight
+        gene.x = payload.position.x
+        gene.y = payload.position.y
+        gene.default_active = payload.default_active
+        await self.session.commit()
+
+    async def delete_gene(self, genome_id: int, gene_id: int, user_id: int) -> None:
+        gene = await self._get_owned_gene(genome_id, gene_id, user_id)
+        await self.session.delete(gene)
+        await self.session.commit()
+
+    async def create_edge(self, genome_id: int, user_id: int, payload: GeneEdgeCreate) -> None:
+        genome = await self.genomes.get_owned(genome_id, user_id)
+        if genome is None:
+            raise HTTPException(status_code=404, detail="Genome not found")
+
+        gene_ids = {link.gene_id for link in genome.gene_links}
+        if payload.source not in gene_ids or payload.target not in gene_ids:
+            raise HTTPException(
+                status_code=400,
+                detail="Edge genes must belong to this genome",
+            )
+        if payload.source == payload.target:
+            raise HTTPException(status_code=400, detail="Edge cannot point to itself")
+
+        self.session.add(
+            GeneEdge(
+                source_id=payload.source,
+                target_id=payload.target,
+                weight=payload.weight,
+            )
+        )
+        await self.session.commit()
+
+    async def update_gene_position(
+        self,
+        genome_id: int,
+        gene_id: int,
+        user_id: int,
+        position: Position,
+    ) -> None:
+        gene = await self._get_owned_gene(genome_id, gene_id, user_id)
+        gene.x = position.x
+        gene.y = position.y
+        await self.session.commit()
+
+    async def _get_owned_gene(self, genome_id: int, gene_id: int, user_id: int) -> Gene:
+        genome = await self.genomes.get_owned(genome_id, user_id)
+        if genome is None:
+            raise HTTPException(status_code=404, detail="Genome not found")
+
+        gene_ids = {link.gene_id for link in genome.gene_links}
+        if gene_id not in gene_ids:
+            raise HTTPException(status_code=404, detail="Gene not found")
+
+        gene = await self.session.get(Gene, gene_id)
+        if gene is None:
+            raise HTTPException(status_code=404, detail="Gene not found")
+        return gene

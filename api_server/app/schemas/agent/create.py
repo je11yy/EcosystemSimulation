@@ -6,8 +6,6 @@ from app.enums import AgentSex
 
 
 class AgentCreate(BaseModel):
-    """Agent create request"""
-
     territory_id: int
     genome_id: Optional[int] = None
     sex: AgentSex

@@ -8,8 +8,6 @@ from .create import AgentCreate
 
 
 class AgentRead(AgentCreate):
-    """Agent read response"""
-
     id: int
     hunger: float
     hp: float
@@ -25,8 +23,6 @@ class AgentRead(AgentCreate):
 
 
 class AgentResponse(BaseModel):
-    """Agent response with full data"""
-
     id: int
     sex: AgentSex
     territory_id: int

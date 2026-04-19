@@ -1,9 +1,7 @@
 from pydantic import BaseModel
 
 
-class Edge(BaseModel):  # type: ignore
-    """Graph edge"""
-
+class Edge(BaseModel):
     id: int
     source: int
     target: int
@@ -11,6 +9,10 @@ class Edge(BaseModel):  # type: ignore
 
 
 class GeneEdge(Edge):
-    """Gene edge in genome"""
-
     pass
+
+
+class GeneEdgeCreate(BaseModel):
+    source: int
+    target: int
+    weight: float

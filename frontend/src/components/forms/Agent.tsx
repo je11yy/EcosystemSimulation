@@ -1,23 +1,51 @@
 // new_agent.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Option } from "./types";
 
 interface NewAgentProps {
     availableGenomes: Option[];
     availableTerritories: Option[];
-    onCreate: (sex: string, genome_id: number, territory_id: number) => void;
+    onCreate: (sex: string, genome_id: number | null, territory_id: number) => void;
+    initialValue?: {
+        sex: string;
+        genome_id: number | null;
+        territory_id: number;
+    };
+    submitLabel?: string;
 }
 
-export function NewAgent({ availableGenomes, availableTerritories, onCreate }: NewAgentProps) {
+export function NewAgent({
+    availableGenomes,
+    availableTerritories,
+    onCreate,
+    initialValue,
+    submitLabel,
+}: NewAgentProps) {
     const { t } = useTranslation();
-    const [sex, setSex] = useState("male");
-    const [selectedGenome, setSelectedGenome] = useState<number>(availableGenomes[0]?.id || 0);
-    const [selectedTerritory, setSelectedTerritory] = useState<number>(availableTerritories[0]?.id || 0);
+    const [sex, setSex] = useState(initialValue?.sex ?? "male");
+    const [selectedGenome, setSelectedGenome] = useState<number>(
+        initialValue?.genome_id ?? availableGenomes[0]?.id ?? 0,
+    );
+    const [selectedTerritory, setSelectedTerritory] = useState<number>(
+        initialValue?.territory_id ?? availableTerritories[0]?.id ?? 0,
+    );
+
+    useEffect(() => {
+        if (initialValue === undefined) {
+            setSelectedGenome(availableGenomes[0]?.id || 0);
+        }
+    }, [availableGenomes, initialValue]);
+
+    useEffect(() => {
+        if (initialValue === undefined) {
+            setSelectedTerritory(availableTerritories[0]?.id || 0);
+        }
+    }, [availableTerritories, initialValue]);
 
     const handleSubmit = () => {
-        onCreate(sex, selectedGenome, selectedTerritory);
+        onCreate(sex, selectedGenome || null, selectedTerritory);
     };
 
     return (
@@ -30,19 +58,13 @@ export function NewAgent({ availableGenomes, availableTerritories, onCreate }: N
                 </select>
             </div>
             <div>
-                <label>{t('genome')}:</label>
-                {availableGenomes.map(genome => (
-                    <div key={genome.id}>
-                        <input
-                            type="radio"
-                            id={`genome-${genome.id}`}
-                            name="genome"
-                            checked={selectedGenome === genome.id}
-                            onChange={() => setSelectedGenome(genome.id)}
-                        />
-                        <label htmlFor={`genome-${genome.id}`}>{genome.name}</label>
-                    </div>
-                ))}
+                <label htmlFor="genome">{t('genome')}:</label>
+                <select id="genome" value={selectedGenome} onChange={(e) => setSelectedGenome(Number(e.target.value))}>
+                    <option value={0}>{t('without_genome')}</option>
+                    {availableGenomes.map(genome => (
+                        <option key={genome.id} value={genome.id}>{genome.name}</option>
+                    ))}
+                </select>
             </div>
             <div>
                 <label htmlFor="territory">{t('territory')}:</label>
@@ -52,7 +74,9 @@ export function NewAgent({ availableGenomes, availableTerritories, onCreate }: N
                     ))}
                 </select>
             </div>
-            <button onClick={handleSubmit}>{t('create')}</button>
+            <button onClick={handleSubmit} disabled={!selectedTerritory}>
+                {submitLabel ?? t('create')}
+            </button>
         </div>
     );
 }

@@ -1,9 +1,7 @@
 from pydantic import BaseModel
 
 
-class Edge(BaseModel):  # type: ignore
-    """Graph edge"""
-
+class Edge(BaseModel):
     id: int
     source: int
     target: int
@@ -11,6 +9,4 @@ class Edge(BaseModel):  # type: ignore
 
 
 class TerritoryEdge(Edge):
-    """Alias for Edge used in territory context"""
-
     pass

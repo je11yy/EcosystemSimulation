@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 from app.models import Agent
 from app.models.relations.simulation_agent import SimulationAgentRelation
 from app.models.relations.simulation_territory import SimulationTerritoryRelation
+from app.models.relations.territory_agent import TerritoryAgentRelation
 from app.repositories.base import Repository
 
 
@@ -24,7 +25,13 @@ class AgentRepository(Repository):
         stmt = (
             select(Agent)
             .join(SimulationAgentRelation, SimulationAgentRelation.agent_id == Agent.id)
+            .join(TerritoryAgentRelation, TerritoryAgentRelation.agent_id == Agent.id)
+            .join(
+                SimulationTerritoryRelation,
+                SimulationTerritoryRelation.territory_id == TerritoryAgentRelation.territory_id,
+            )
             .where(SimulationAgentRelation.simulation_id == simulation_id)
+            .where(SimulationTerritoryRelation.simulation_id == simulation_id)
             .options(
                 selectinload(Agent.territory_links),
                 selectinload(Agent.genome_links),

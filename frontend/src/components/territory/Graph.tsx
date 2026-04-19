@@ -11,6 +11,7 @@ export const TerritoryGraphComponent = ({
     selectedEdgeId = null,
     onEdgeClick,
     onNodePositionChange,
+    canDragNodes,
 }: Props) => {
     return <GraphComponent
         graph={graph}
@@ -21,6 +22,7 @@ export const TerritoryGraphComponent = ({
         selectedEdgeId={selectedEdgeId}
         onEdgeClick={onEdgeClick}
         onNodePositionChange={onNodePositionChange}
+        canDragNodes={canDragNodes}
         getNodeColor={(node) => {
             const foodRatio = (node as Territory).food / (node as Territory).food_capacity;
             const red = Math.min(255, Math.floor(255 * foodRatio));

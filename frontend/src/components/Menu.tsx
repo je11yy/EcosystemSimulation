@@ -7,16 +7,17 @@ export function Menu() {
     const { user, logout } = useAuth();
 
     return (
-        <nav style={{ display: "flex", gap: 16, padding: 16, backgroundColor: "#eee" }}>
+        <nav className="top-nav">
+            <div className="brand-mark">EcoSim</div>
             <Link to="/simulations">{t("simulations")}</Link>
             <Link to="/genomes">{t("genomes")}</Link>
             {user ? (
-                <>
-                    <span>{user.nickname}</span>
+                <div className="nav-user">
+                    <span className="user-pill">{user.nickname}</span>
                     <button type="button" onClick={() => void logout()}>
                         {t("logout")}
                     </button>
-                </>
+                </div>
             ) : (
                 <Link to="/login">{t("login")}</Link>
             )}

@@ -1,20 +1,33 @@
 // forms/territory.tsx
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { TerritoryCreate } from "src/api/types";
 
 interface NewTerritoryProps {
-    onCreate: (food: number, temperature: number, food_regen_per_tick: number, food_capacity: number) => void;
+    onCreate: (territory: TerritoryCreate) => void;
+    initialValue?: TerritoryCreate;
+    submitLabel?: string;
 }
 
-export function NewTerritory({ onCreate }: NewTerritoryProps) {
+export function NewTerritory({ onCreate, initialValue, submitLabel }: NewTerritoryProps) {
     const { t } = useTranslation();
-    const [food, setFood] = useState<number>(0);
-    const [temperature, setTemperature] = useState<number>(20);
-    const [foodRegenPerTick, setFoodRegenPerTick] = useState<number>(1);
-    const [foodCapacity, setFoodCapacity] = useState<number>(100);
+    const [food, setFood] = useState<number>(initialValue?.food ?? 0);
+    const [temperature, setTemperature] = useState<number>(initialValue?.temperature ?? 20);
+    const [foodRegenPerTick, setFoodRegenPerTick] = useState<number>(
+        initialValue?.food_regen_per_tick ?? 1,
+    );
+    const [foodCapacity, setFoodCapacity] = useState<number>(initialValue?.food_capacity ?? 100);
+    const [x, setX] = useState<number>(initialValue?.position.x ?? 100);
+    const [y, setY] = useState<number>(initialValue?.position.y ?? 100);
 
     const handleSubmit = () => {
-        onCreate(food, temperature, foodRegenPerTick, foodCapacity);
+        onCreate({
+            food,
+            food_capacity: Math.max(foodCapacity, food),
+            food_regen_per_tick: foodRegenPerTick,
+            temperature,
+            position: { x, y },
+        });
     };
 
     return (
@@ -35,7 +48,15 @@ export function NewTerritory({ onCreate }: NewTerritoryProps) {
                 <label htmlFor="foodCapacity">{t('food_capacity')}:</label>
                 <input type="number" id="foodCapacity" value={foodCapacity} onChange={(e) => setFoodCapacity(Number(e.target.value))} />
             </div>
-            <button onClick={handleSubmit}>{t('create')}</button>
+            <div>
+                <label htmlFor="territoryX">X:</label>
+                <input type="number" id="territoryX" value={x} onChange={(e) => setX(Number(e.target.value))} />
+            </div>
+            <div>
+                <label htmlFor="territoryY">Y:</label>
+                <input type="number" id="territoryY" value={y} onChange={(e) => setY(Number(e.target.value))} />
+            </div>
+            <button onClick={handleSubmit}>{submitLabel ?? t('create')}</button>
         </div>
     );
 };
