@@ -3,11 +3,13 @@ import {
     createSimulation,
     deleteSimulation,
     updateSimulationName,
+    buildSimulation,
     startSimulation,
     stepSimulation,
     runSimulation,
     pauseSimulation,
     stopSimulation,
+    createSimulationFromScenario,
 } from "src/api/simulations";
 
 /** Мутации для страницы списка симуляций */
@@ -23,6 +25,11 @@ export function useSimulationsListMutations() {
         onSuccess: invalidate,
     });
 
+    const createFromScenarioMutation = useMutation({
+        mutationFn: (scenarioKey: string) => createSimulationFromScenario(scenarioKey),
+        onSuccess: invalidate,
+    });
+
     const deleteMutation = useMutation({
         mutationFn: (simulationId: number) => deleteSimulation(simulationId),
         onSuccess: invalidate,
@@ -34,7 +41,7 @@ export function useSimulationsListMutations() {
         onSuccess: invalidate,
     });
 
-    return { createMutation, deleteMutation, updateNameMutation };
+    return { createMutation, createFromScenarioMutation, deleteMutation, updateNameMutation };
 }
 
 /** Мутации управления симуляцией (запуск, шаг, пауза и т.д.) */
@@ -43,7 +50,13 @@ export function useSimulationControlMutations(simulationId: number) {
 
     const invalidate = () => {
         queryClient.invalidateQueries({ queryKey: ["simulation", simulationId] });
+        queryClient.invalidateQueries({ queryKey: ["agents", simulationId] });
     };
+
+    const buildMutation = useMutation({
+        mutationFn: () => buildSimulation(simulationId),
+        onSuccess: invalidate,
+    });
 
     const startMutation = useMutation({
         mutationFn: () => startSimulation(simulationId),
@@ -80,6 +93,7 @@ export function useSimulationControlMutations(simulationId: number) {
     });
 
     return {
+        buildMutation,
         startMutation,
         stepMutation,
         runMutation,

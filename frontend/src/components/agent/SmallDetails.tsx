@@ -5,11 +5,11 @@ import { AgentDetails } from "./Details";
 import type { Option } from "src/components/forms/types";
 
 function getSatisfactionColor(satisfaction: number): string {
-    if (satisfaction > 75) {
+    if (satisfaction > 3.75) {
         return "green";
-    } else if (satisfaction > 50) {
+    } else if (satisfaction > 2.5) {
         return "yellow";
-    } else if (satisfaction > 25) {
+    } else if (satisfaction > 1.25) {
         return "orange";
     } else {
         return "red";

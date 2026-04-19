@@ -22,8 +22,8 @@ export function GenomesPage() {
     return (
         <div>
             <h1>{t("genomes")}</h1>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder={t("genome_name")} />
-            <button onClick={() => createMutation.mutate(name, { onSuccess: () => setName("") })} disabled={createMutation.isPending || !name}>{t("create")}</button>
+            <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder={t("genome_name")} />
+            <button className="form-input-button" onClick={() => createMutation.mutate(name, { onSuccess: () => setName("") })} disabled={createMutation.isPending || !name}>{t("create")}</button>
             {genomesQuery.isLoading && <p>{t("loading")}...</p>}
             {genomesQuery.isError && <p>{t("error_loading_genomes")}</p>}
             {genomesQuery.data && (
@@ -33,6 +33,10 @@ export function GenomesPage() {
                             <Link to={`/genomes/${genome.id}`}>
                                 {genome.name}
                             </Link>
+                            {genome.is_template && (
+                                <span className="template-badge">{t("template")}</span>
+                            )}
+                            {genome.description && <p className="form-hint">{genome.description}</p>}
                         </li>
                     ))}
                 </ul>

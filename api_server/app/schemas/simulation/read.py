@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.enums import SimulationStatus
 
@@ -42,6 +42,7 @@ class SimulationDetails(SimulationRead):
     territories: list[TerritoryResponse]
     territories_edges: list[TerritoryEdgeResponse]
     last_log: Optional[SimulationLogRead] = None
+    logs: list[SimulationLogRead] = Field(default_factory=list)
     last_step: Optional[dict] = None
 
 

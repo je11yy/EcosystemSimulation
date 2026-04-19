@@ -55,6 +55,11 @@ class AgentState:
     def validate(self, cfg: SimConfig) -> None:
         self.hunger = clamp(self.hunger, cfg.hunger_min, cfg.hunger_max)
         self.hp = clamp(self.hp, cfg.hp_min, self.max_hp)
+        self.satisfaction = clamp(
+            self.satisfaction,
+            cfg.satisfaction_min,
+            cfg.satisfaction_max,
+        )
         self.base_strength = clamp(self.base_strength, cfg.strength_min, cfg.strength_max)
         self.base_defense = clamp(self.base_defense, cfg.defense_min, cfg.defense_max)
 

@@ -36,10 +36,12 @@ def simulation_details_to_dict(
     edges: list[TerritoryEdge],
 ) -> dict[str, Any]:
     last_log = simulation.last_log
+    logs = sorted(simulation.logs, key=lambda log: log.tick)
     return {
         **simulation_to_dict(simulation),
         "territories": [territory_to_dict(territory) for territory in territories],
         "territories_edges": [territory_edge_to_dict(edge) for edge in edges],
         "last_log": log_to_dict(last_log),
+        "logs": [log_to_dict(log) for log in logs],
         "last_step": last_log.step_result if last_log else None,
     }

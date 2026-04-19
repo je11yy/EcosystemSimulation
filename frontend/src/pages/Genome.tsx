@@ -43,6 +43,7 @@ export function GenomePage() {
     const genome = genomeQuery.data;
     const genes = genome?.genes ?? [];
     const edges = genome?.edges ?? [];
+    const isTemplate = genome?.is_template ?? false;
     const geneById = new Map(genes.map(gene => [gene.id, gene]));
     const selectedNodeId = edgeSourceId ?? selectedGene?.id ?? null;
 
@@ -80,8 +81,10 @@ export function GenomePage() {
     return (
         <div>
             <h2>{genome?.name ?? t("genome")}</h2>
+            {genome?.description && <p className="form-hint">{genome.description}</p>}
+            {isTemplate && <p className="template-note">{t("template_genome_readonly")}</p>}
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                <button onClick={() => setActiveModal("gene")}>
+                <button onClick={() => setActiveModal("gene")} disabled={isTemplate}>
                     {t("add_gene")}
                 </button>
                 <button
@@ -93,7 +96,7 @@ export function GenomePage() {
                             setSelectedGene(null);
                         }
                     }}
-                    disabled={genes.length < 2}
+                    disabled={genes.length < 2 || isTemplate}
                 >
                     {isEdgeMode ? t("cancel_edge_mode") : t("create_edge")}
                 </button>
@@ -117,9 +120,11 @@ export function GenomePage() {
                     selectedEdgeId={null}
                     onEdgeClick={() => { }}
                     onNodePositionChange={(geneId, position) => {
-                        updatePositionMutation.mutate({ geneId, position });
+                        if (!isTemplate) {
+                            updatePositionMutation.mutate({ geneId, position });
+                        }
                     }}
-                    canDragNodes={!isEdgeMode}
+                    canDragNodes={!isEdgeMode && !isTemplate}
                 />
             )}
             {activeModal === "gene" && (
@@ -199,24 +204,26 @@ export function GenomePage() {
                             <p>{t("gene_weight")}: {selectedGene.weight}</p>
                             <p>{t("threshold")}: {selectedGene.threshold}</p>
                             {selectedGene.default_active && <p>{t("default_active")}</p>}
-                            <div style={{ display: "flex", gap: 8 }}>
-                                <button type="button" onClick={() => setIsEditingGene(true)}>
-                                    {t("edit")}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        deleteGeneMutation.mutate(selectedGene.id, {
-                                            onSuccess: () => {
-                                                setSelectedGene(null);
-                                                setIsEditingGene(false);
-                                            },
-                                        });
-                                    }}
-                                >
-                                    {t("delete")}
-                                </button>
-                            </div>
+                            {!isTemplate && (
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    <button type="button" onClick={() => setIsEditingGene(true)}>
+                                        {t("edit")}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            deleteGeneMutation.mutate(selectedGene.id, {
+                                                onSuccess: () => {
+                                                    setSelectedGene(null);
+                                                    setIsEditingGene(false);
+                                                },
+                                            });
+                                        }}
+                                    >
+                                        {t("delete")}
+                                    </button>
+                                </div>
+                            )}
                         </>
                     )}
                 </Modal>

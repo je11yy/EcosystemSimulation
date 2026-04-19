@@ -8,15 +8,15 @@ from app.repositories.base import Repository
 
 
 class GenomeRepository(Repository):
-    async def list_by_user(self, user_id: int) -> list[tuple[Genome, int]]:
+    async def list_by_user(self, user_id: int) -> list[tuple[Genome, int | None]]:
         stmt = (
             select(Genome, GenomeUserRelation.user_id)
-            .join(GenomeUserRelation, GenomeUserRelation.genome_id == Genome.id)
-            .where(GenomeUserRelation.user_id == user_id)
-            .order_by(Genome.updated_at.desc(), Genome.id.desc())
+            .outerjoin(GenomeUserRelation, GenomeUserRelation.genome_id == Genome.id)
+            .where((Genome.is_template.is_(True)) | (GenomeUserRelation.user_id == user_id))
+            .order_by(Genome.is_template.desc(), Genome.updated_at.desc(), Genome.id.desc())
             .options(selectinload(Genome.user_links))
         )
-        return list((await self.session.execute(stmt)).all())
+        return list((await self.session.execute(stmt)).unique().all())
 
     async def available_for_user(self, user_id: int) -> list[Genome]:
         stmt = (

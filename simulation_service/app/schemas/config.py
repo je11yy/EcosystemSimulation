@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -11,7 +13,11 @@ class RuntimeSimConfig(BaseModel):
     hp_min: int = 0
     hp_max: int = 5
 
+    satisfaction_min: float = 0.0
+    satisfaction_max: float = 5.0
+
     beta_default: float = 2.0
+    random_seed: Optional[int] = None
     pregnancy_duration_ticks: int = 3
     hunt_cooldown_ticks: int = 1
     newborn_hp: float = 3.0

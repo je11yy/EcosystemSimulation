@@ -88,6 +88,11 @@ export const GENE_EFFECT_META: Record<GeneEffectType, GeneEffectMeta> = {
         thresholdKey: "gene_effect_meta.SOCIAL_TOLERANCE.threshold",
         weightKey: "gene_effect_meta.SOCIAL_TOLERANCE.weight",
     },
+    MUTATION_RATE: {
+        descriptionKey: "gene_effect_meta.MUTATION_RATE.description",
+        thresholdKey: "gene_effect_meta.MUTATION_RATE.threshold",
+        weightKey: "gene_effect_meta.MUTATION_RATE.weight",
+    },
 };
 
 export function getGeneEffectMeta(effectType: string): GeneEffectMeta {

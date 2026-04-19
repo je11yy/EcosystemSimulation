@@ -3,16 +3,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import SimulationStatus
 from app.mappers.simulation import simulation_details_to_dict, simulation_to_dict
-from app.models import Simulation, SimulationLog
+from app.models import Simulation
 from app.models.relations.simulation_user import SimulationUserRelation
 from app.repositories.simulation import SimulationRepository
 from app.schemas import SimulationCreate
+from app.services.simulation.runtime_orchestrator import SimulationRuntimeOrchestrator
 
 
 class SimulationService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.simulations = SimulationRepository(session)
+        self.runtime_orchestrator = SimulationRuntimeOrchestrator(session)
 
     async def list_by_user(self, user_id: int) -> list[dict]:
         rows = await self.simulations.list_by_user(user_id)
@@ -26,6 +28,7 @@ class SimulationService:
         await self.session.commit()
 
     async def get_details(self, user_id: int, simulation_id: int) -> dict:
+        await self.runtime_orchestrator.sync_runtime(user_id, simulation_id)
         simulation, territories, edges = await self.simulations.get_details_parts(
             simulation_id,
             user_id,
@@ -36,6 +39,7 @@ class SimulationService:
 
     async def delete(self, user_id: int, simulation_id: int) -> None:
         simulation = await self._get_owned(user_id, simulation_id)
+        await self.runtime_orchestrator.stop_if_built(simulation_id)
         await self.session.delete(simulation)
         await self.session.commit()
 
@@ -49,37 +53,20 @@ class SimulationService:
         simulation.status = status.value
         await self.session.commit()
 
+    async def build_runtime(self, user_id: int, simulation_id: int) -> None:
+        await self.runtime_orchestrator.build_runtime(user_id, simulation_id)
+
+    async def start(self, user_id: int, simulation_id: int) -> None:
+        await self.runtime_orchestrator.start(user_id, simulation_id)
+
+    async def pause(self, user_id: int, simulation_id: int) -> None:
+        await self.runtime_orchestrator.pause(user_id, simulation_id)
+
+    async def stop(self, user_id: int, simulation_id: int) -> None:
+        await self.runtime_orchestrator.stop(user_id, simulation_id)
+
     async def step(self, user_id: int, simulation_id: int) -> None:
-        simulation = await self._get_owned(user_id, simulation_id)
-        next_tick = simulation.tick + 1
-        simulation.tick = next_tick
-        self.session.add(
-            SimulationLog(
-                simulation_id=simulation_id,
-                tick=next_tick,
-                agent_decisions=[],
-                step_result={
-                    "eat": 0,
-                    "move": 0,
-                    "mate": 0,
-                    "rest": 0,
-                    "hunt": 0,
-                    "deaths": 0,
-                    "births": 0,
-                    "fights": 0,
-                },
-                metrics={
-                    "alive_population": 0,
-                    "avg_hunger": 0.0,
-                    "occupancy_by_territory": {},
-                    "deaths_by_reason": {},
-                    "successful_hunts": 0,
-                    "unsuccessful_hunts": 0,
-                    "consumed_food": 0,
-                },
-            )
-        )
-        await self.session.commit()
+        await self.runtime_orchestrator.step(user_id, simulation_id)
 
     async def _get_owned(self, user_id: int, simulation_id: int) -> Simulation:
         simulation = await self.simulations.get_owned(simulation_id, user_id)

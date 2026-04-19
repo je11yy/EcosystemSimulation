@@ -1,5 +1,11 @@
 import { apiFetch } from "./client";
-import type { Simulation, Response, SimulationDetails } from "./types";
+import type {
+    Response,
+    ScenarioCreateResponse,
+    ScenarioPreset,
+    Simulation,
+    SimulationDetails,
+} from "./types";
 
 export function getSimulations(): Promise<Simulation[]> {
     return apiFetch<Simulation[]>("/simulations");
@@ -16,6 +22,18 @@ export function createSimulation(name: string): Promise<Response> {
 	});
 };
 
+export function getScenarioPresets(): Promise<ScenarioPreset[]> {
+    return apiFetch<ScenarioPreset[]>("/simulations/scenarios");
+}
+
+export function createSimulationFromScenario(
+    scenarioKey: string,
+): Promise<ScenarioCreateResponse> {
+    return apiFetch<ScenarioCreateResponse>(`/simulations/scenarios/${scenarioKey}`, {
+        method: "POST",
+    });
+}
+
 export function deleteSimulation(simulationId: number): Promise<Response> {
 	return apiFetch<Response>(`/simulations/${simulationId}`, {
 		method: "DELETE",
@@ -31,6 +49,12 @@ export function updateSimulationName(simulationId: number, name: string): Promis
 
 export function startSimulation(simulationId: number): Promise<Response> {
 	return apiFetch<Response>(`/simulations/${simulationId}/start`, {
+		method: "POST",
+	});
+}
+
+export function buildSimulation(simulationId: number): Promise<Response> {
+	return apiFetch<Response>(`/simulations/${simulationId}/build`, {
 		method: "POST",
 	});
 }

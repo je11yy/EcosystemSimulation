@@ -22,6 +22,8 @@ class SimulationRuntime:
     status: str = "built"
     task: asyncio.Task | None = None
     last_result: dict[str, Any] | None = None
+    completed_results: list[dict[str, Any]] = field(default_factory=list)
+    dropped_results_count: int = 0
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     @property
@@ -99,6 +101,21 @@ class RuntimeManager:
         del self.runtimes[simulation_id]
         return True
 
+    async def drain(self, simulation_id: int) -> dict[str, Any]:
+        runtime = self._get_runtime(simulation_id)
+        async with runtime.lock:
+            results = list(runtime.completed_results)
+            dropped_results_count = runtime.dropped_results_count
+            runtime.completed_results.clear()
+            runtime.dropped_results_count = 0
+            snapshot = self._snapshot(runtime)
+        return {
+            "simulation_id": simulation_id,
+            "results": results,
+            "dropped_results_count": dropped_results_count,
+            "snapshot": snapshot.model_dump(),
+        }
+
     def status(
         self,
         simulation_id: int,
@@ -136,6 +153,8 @@ class RuntimeManager:
                 async with runtime.lock:
                     result = runtime.engine.step()
                     runtime.last_result = self._encode_step_result(result)
+                    runtime.completed_results.append(runtime.last_result)
+                    self._trim_completed_results(runtime)
                 completed_steps += 1
                 await asyncio.sleep(max(0.0, interval_seconds))
         except asyncio.CancelledError:
@@ -180,6 +199,13 @@ class RuntimeManager:
         encoded["step"] = jsonable_encoder(result.step)
         return encoded
 
+    def _trim_completed_results(self, runtime: SimulationRuntime) -> None:
+        limit = max(1, settings.runtime_completed_results_limit)
+        overflow = len(runtime.completed_results) - limit
+        if overflow > 0:
+            del runtime.completed_results[:overflow]
+            runtime.dropped_results_count += overflow
+
     def _agent_snapshot(self, agent) -> dict[str, Any]:
         return {
             "id": agent.state.id,
@@ -198,6 +224,30 @@ class RuntimeManager:
             "hunt_cooldown": agent.state.hunt_cooldown,
             "is_alive": agent.state.is_alive,
             "max_hp": agent.state.max_hp,
+            "genome": self._genome_snapshot(agent.genome),
+        }
+
+    def _genome_snapshot(self, genome) -> dict[str, Any]:
+        return {
+            "genes": [
+                {
+                    "id": gene.id,
+                    "name": gene.name,
+                    "effect_type": gene.effect_type.value,
+                    "threshold": gene.threshold,
+                    "weight": gene.weight,
+                    "default_active": gene.default_active,
+                }
+                for gene in genome.genes.values()
+            ],
+            "edges": [
+                {
+                    "source": edge.source_id,
+                    "target": edge.target_id,
+                    "weight": edge.weight,
+                }
+                for edge in genome.graph.edges.values()
+            ],
         }
 
 

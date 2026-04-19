@@ -2,6 +2,7 @@ import type { Agent } from "./types";
 import { useTranslation } from "react-i18next";
 import { NewAgent } from "src/components/forms/Agent";
 import type { Option } from "src/components/forms/types";
+import { Link } from "react-router-dom";
 
 export function AgentDetails({
     agent,
@@ -51,9 +52,16 @@ export function AgentDetails({
         <p>{t('strength')}: {agent.strength}</p>
         <p>{t('defense')}: {agent.defense}</p>
         <p>{t('temp_preference')}: {agent.temp_pref}</p>
-        <p>{t('satisfaction')}: {agent.satisfaction}</p>
+        <p>{t('satisfaction')}: {agent.satisfaction.toFixed(2)} / 5</p>
         {agent.pregnant && <p>{t('pregnant')}</p> && <p>{t('ticks_to_birth')}: {agent.ticks_to_birth}</p>}
-        <button type="button" onClick={onEdit}>{t('edit')}</button>
-        <button onClick={() => onDelete?.(agent.id)}>{t('delete_agent')}</button>
+        <div className="agent-actions">
+            {agent.genome_id !== null && (
+                <Link className="button-link" to={`/genomes/${agent.genome_id}`}>
+                    {t("open_agent_genome")}
+                </Link>
+            )}
+            <button type="button" onClick={onEdit}>{t('edit')}</button>
+            <button onClick={() => onDelete?.(agent.id)}>{t('delete_agent')}</button>
+        </div>
     </div>
 }

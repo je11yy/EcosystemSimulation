@@ -91,6 +91,7 @@ _CONSTITUTIVE_EFFECTS = {
     GeneEffectType.STRENGTH,
     GeneEffectType.DEFENSE,
     GeneEffectType.METABOLISM,
+    GeneEffectType.MUTATION_RATE,
 }
 
 

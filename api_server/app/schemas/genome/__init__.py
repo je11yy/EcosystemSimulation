@@ -10,9 +10,11 @@ from .gene import Gene, GeneCreate
 class AvailableGenome(BaseModel):
     id: int
     name: str
+    is_template: bool = False
 
 
 class GenomeRead(AvailableGenome):
+    description: Optional[str] = None
     genes: List[Gene] = []
     edges: List[GeneEdge] = []
 
@@ -23,7 +25,9 @@ class GenomeRead(AvailableGenome):
 class GenomeList(BaseModel):
     id: int
     name: str
-    user_id: int
+    user_id: Optional[int] = None
+    description: Optional[str] = None
+    is_template: bool = False
     updated_at: datetime
 
     class Config:

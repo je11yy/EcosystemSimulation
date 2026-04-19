@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.schemas.simulation import (
     BuildSimulationRequest,
+    RuntimeDrainResponse,
     RuntimeStatusResponse,
     RuntimeStepResponse,
     StartSimulationRequest,
@@ -33,6 +34,11 @@ async def start_simulation(
 @router.post("/{simulation_id}/pause", response_model=RuntimeStatusResponse)
 async def pause_simulation(simulation_id: int) -> RuntimeStatusResponse:
     return await runtime_manager.pause(simulation_id)
+
+
+@router.post("/{simulation_id}/drain", response_model=RuntimeDrainResponse)
+async def drain_simulation_results(simulation_id: int) -> dict:
+    return await runtime_manager.drain(simulation_id)
 
 
 @router.post("/{simulation_id}/stop", response_model=StopSimulationResponse)

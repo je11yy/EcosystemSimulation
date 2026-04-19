@@ -63,18 +63,20 @@ class GenomeMutator:
         self,
         genome: Genome,
         rng: Optional[Random] = None,
+        rate_multiplier: float = 1.0,
     ) -> GenomeMutationResult:
         rng = rng or Random()
+        rate_multiplier = max(0.0, rate_multiplier)
         mutated = _clone_genome(genome)
 
-        changed_gene_parameters = self._mutate_gene_parameters(mutated, rng)
-        flipped_default_active = self._mutate_default_active(mutated, rng)
-        deleted_genes = self._delete_genes(mutated, rng)
-        duplicated_genes = self._duplicate_genes(mutated, rng)
-        added_genes = self._add_new_gene(mutated, rng)
-        deleted_edges = self._delete_edges(mutated, rng)
-        changed_edge_weights = self._mutate_edge_weights(mutated, rng)
-        added_edges = self._add_edge(mutated, rng)
+        changed_gene_parameters = self._mutate_gene_parameters(mutated, rng, rate_multiplier)
+        flipped_default_active = self._mutate_default_active(mutated, rng, rate_multiplier)
+        deleted_genes = self._delete_genes(mutated, rng, rate_multiplier)
+        duplicated_genes = self._duplicate_genes(mutated, rng, rate_multiplier)
+        added_genes = self._add_new_gene(mutated, rng, rate_multiplier)
+        deleted_edges = self._delete_edges(mutated, rng, rate_multiplier)
+        changed_edge_weights = self._mutate_edge_weights(mutated, rng, rate_multiplier)
+        added_edges = self._add_edge(mutated, rng, rate_multiplier)
 
         mutated._sync_edges_from_graph()
 
@@ -92,10 +94,10 @@ class GenomeMutator:
             ),
         )
 
-    def _mutate_gene_parameters(self, genome: Genome, rng: Random) -> int:
+    def _mutate_gene_parameters(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
         changed = 0
         for gene_id, gene in list(genome.genes.items()):
-            if rng.random() > self.config.gene_parameter_rate:
+            if not _roll(rng, self.config.gene_parameter_rate, rate_multiplier):
                 continue
 
             genome.genes[gene_id] = Gene(
@@ -119,10 +121,10 @@ class GenomeMutator:
 
         return changed
 
-    def _mutate_default_active(self, genome: Genome, rng: Random) -> int:
+    def _mutate_default_active(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
         changed = 0
         for gene_id, gene in list(genome.genes.items()):
-            if rng.random() > self.config.default_active_flip_rate:
+            if not _roll(rng, self.config.default_active_flip_rate, rate_multiplier):
                 continue
 
             genome.genes[gene_id] = Gene(
@@ -138,12 +140,12 @@ class GenomeMutator:
 
         return changed
 
-    def _delete_genes(self, genome: Genome, rng: Random) -> int:
+    def _delete_genes(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
         deleted = 0
         for gene_id in list(genome.genes):
             if len(genome.genes) <= 1:
                 break
-            if rng.random() > self.config.gene_deletion_rate:
+            if not _roll(rng, self.config.gene_deletion_rate, rate_multiplier):
                 continue
 
             del genome.genes[gene_id]
@@ -159,10 +161,10 @@ class GenomeMutator:
 
         return deleted
 
-    def _duplicate_genes(self, genome: Genome, rng: Random) -> int:
+    def _duplicate_genes(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
         duplicated = 0
         for gene in list(genome.genes.values()):
-            if rng.random() > self.config.gene_duplication_rate:
+            if not _roll(rng, self.config.gene_duplication_rate, rate_multiplier):
                 continue
 
             duplicated_gene = Gene(
@@ -179,8 +181,8 @@ class GenomeMutator:
 
         return duplicated
 
-    def _add_new_gene(self, genome: Genome, rng: Random) -> int:
-        if rng.random() > self.config.new_gene_rate:
+    def _add_new_gene(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
+        if not _roll(rng, self.config.new_gene_rate, rate_multiplier):
             return 0
 
         effect_type = rng.choice(list(GeneEffectType))
@@ -197,10 +199,10 @@ class GenomeMutator:
         )
         return 1
 
-    def _delete_edges(self, genome: Genome, rng: Random) -> int:
+    def _delete_edges(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
         deleted = 0
         for key in list(genome.graph.edges):
-            if rng.random() > self.config.edge_deletion_rate:
+            if not _roll(rng, self.config.edge_deletion_rate, rate_multiplier):
                 continue
             del genome.graph.edges[key]
             deleted += 1
@@ -210,10 +212,10 @@ class GenomeMutator:
 
         return deleted
 
-    def _mutate_edge_weights(self, genome: Genome, rng: Random) -> int:
+    def _mutate_edge_weights(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
         changed = 0
         for edge in list(genome.graph.edges.values()):
-            if rng.random() > self.config.edge_weight_rate:
+            if not _roll(rng, self.config.edge_weight_rate, rate_multiplier):
                 continue
 
             genome.graph.add_edge(
@@ -229,8 +231,12 @@ class GenomeMutator:
 
         return changed
 
-    def _add_edge(self, genome: Genome, rng: Random) -> int:
-        if len(genome.genes) < 2 or rng.random() > self.config.edge_addition_rate:
+    def _add_edge(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
+        if len(genome.genes) < 2 or not _roll(
+            rng,
+            self.config.edge_addition_rate,
+            rate_multiplier,
+        ):
             return 0
 
         source_id, target_id = rng.sample(list(genome.genes), 2)
@@ -280,3 +286,7 @@ def _next_gene_id(genome: Genome) -> int:
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(maximum, value))
+
+
+def _roll(rng: Random, base_rate: float, multiplier: float) -> bool:
+    return rng.random() <= _clamp(base_rate * multiplier, 0.0, 1.0)

@@ -8,7 +8,6 @@ export function Menu() {
 
     return (
         <nav className="top-nav">
-            <div className="brand-mark">EcoSim</div>
             <Link to="/simulations">{t("simulations")}</Link>
             <Link to="/genomes">{t("genomes")}</Link>
             {user ? (

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -19,7 +20,13 @@ class SimConfig:
     hp_min: int = 0
     hp_max: int = 5
 
+    # Удовлетворенность агента: интегральная оценка текущего места и состояния.
+    # Используется генами и политикой решений.
+    satisfaction_min: float = 0.0
+    satisfaction_max: float = 5.0
+
     beta_default: float = 2.0
+    random_seed: Optional[int] = None
 
     pregnancy_duration_ticks: int = 3
     hunt_cooldown_ticks: int = 1

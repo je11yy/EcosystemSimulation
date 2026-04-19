@@ -11,6 +11,16 @@ export type Response = {
     message?: string;
 }
 
+export type ScenarioPreset = {
+    key: string;
+    name: string;
+    description: string;
+}
+
+export type ScenarioCreateResponse = Response & {
+    simulation_id: number;
+}
+
 export type User = {
     id: number;
     nickname: string;
@@ -33,6 +43,7 @@ export interface Step {
 export interface TickMetrics {
     alive_population: number;
     avg_hunger: number;
+    avg_satisfaction: number;
     occupancy_by_territory: Record<number, number>;
     deaths_by_reason: Record<string, number>;
     successful_hunts: number;
@@ -75,6 +86,7 @@ export interface SimulationDetails extends Simulation {
     territories_edges: Edge[];
 
     last_log: Log | null;
+    logs: Log[];
     last_step: Step | null;
 };
 
@@ -143,7 +155,8 @@ export type GeneEffectType =
     | "PREDATION_DRIVE"
     | "CARNIVORE_DIGESTION"
     | "CANNIBAL_TOLERANCE"
-    | "SOCIAL_TOLERANCE";
+    | "SOCIAL_TOLERANCE"
+    | "MUTATION_RATE";
 
 export interface GeneCreate {
     name: string;
@@ -165,9 +178,11 @@ export interface GeneEdgeCreate {
 export interface AvailableGenome {
     id: number;
     name: string;
+    is_template: boolean;
 }
 
 export interface Genome extends AvailableGenome {
+    description?: string | null;
     genes: Gene[];
     edges: Edge[];
 }
@@ -175,6 +190,8 @@ export interface Genome extends AvailableGenome {
 export interface GenomeList {
     id: number;
     name: string;
-    user_id: number;
+    user_id: number | null;
+    description?: string | null;
+    is_template: boolean;
     updated_at: string;
 }

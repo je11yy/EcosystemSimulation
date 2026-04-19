@@ -27,6 +27,6 @@ export const TerritoryGraphComponent = ({
             const foodRatio = (node as Territory).food / (node as Territory).food_capacity;
             const red = Math.min(255, Math.floor(255 * foodRatio));
             const green = Math.min(255, Math.floor(255 * (1 - foodRatio)));
-            return `rgb(${red}, ${green}, 0)`;
+            return `rgb(${green}, ${red}, 0)`;
         }} />
 }

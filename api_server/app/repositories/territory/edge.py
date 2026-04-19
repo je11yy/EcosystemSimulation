@@ -31,3 +31,15 @@ class TerritoryEdgeRepository(Repository):
             .order_by(TerritoryEdge.id)
         )
         return list(edges.all())
+
+    async def simulation_id_for_edge(self, edge_id: int) -> int | None:
+        edge = await self.session.get(TerritoryEdge, edge_id)
+        if edge is None:
+            return None
+
+        link = await self.session.scalar(
+            select(SimulationTerritoryRelation).where(
+                SimulationTerritoryRelation.territory_id == edge.source_id
+            )
+        )
+        return link.simulation_id if link else None

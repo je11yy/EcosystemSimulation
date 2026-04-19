@@ -30,6 +30,8 @@ def genome_list_item_to_dict(genome: Genome, user_id: int | None = None) -> dict
         "id": genome.id,
         "name": genome.name,
         "user_id": user_id if user_id is not None else genome.user_id,
+        "description": genome.description,
+        "is_template": genome.is_template,
         "updated_at": iso(genome.updated_at),
     }
 
@@ -41,6 +43,8 @@ def genome_to_dict(genome: Genome) -> dict[str, Any]:
     return {
         "id": genome.id,
         "name": genome.name,
+        "description": genome.description,
+        "is_template": genome.is_template,
         "genes": [gene_to_dict(gene) for gene in genes],
         "edges": [gene_edge_to_dict(edge) for edge in edges],
     }

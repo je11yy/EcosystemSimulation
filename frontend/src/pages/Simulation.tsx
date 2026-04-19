@@ -14,8 +14,12 @@ import { getAvailableGenomes } from "src/api/genomes";
 import { NewTerritory } from "src/components/forms/Territory";
 import { NewAgent } from "src/components/forms/Agent";
 import { NewEdgeWeight } from "src/components/forms/Edge";
+import { Controls } from "src/components/simulation/Controls";
+import { StepResult } from "src/components/simulation/StepResult";
+import { MetricsCharts } from "src/components/simulation/MetricsCharts";
 import { useTerritoryMutations } from "src/hooks/territories/useTerritoryMutations";
 import { useAgentMutations } from "src/hooks/agents/useAgentMutations";
+import { useSimulationControlMutations } from "src/hooks/simulations/useSimulationMutations";
 
 type SimulationModal = "territory" | "edge-weight" | "agent" | null;
 type EdgeDraft = { source: number; target: number } | null;
@@ -53,6 +57,7 @@ export function SimulationPage() {
 
     const territoryMutations = useTerritoryMutations(simulationId);
     const agentMutations = useAgentMutations(simulationId);
+    const simulationMutations = useSimulationControlMutations(simulationId);
 
     const territories = simulationQuery.data?.territories ?? [];
     const territoriesEdges = simulationQuery.data?.territories_edges ?? [];
@@ -101,10 +106,35 @@ export function SimulationPage() {
 
     const edgeDraftSource = edgeDraft ? territoryById.get(edgeDraft.source) : null;
     const edgeDraftTarget = edgeDraft ? territoryById.get(edgeDraft.target) : null;
+    const isSimulationControlBusy =
+        simulationMutations.buildMutation.isPending ||
+        simulationMutations.startMutation.isPending ||
+        simulationMutations.stepMutation.isPending ||
+        simulationMutations.runMutation.isPending ||
+        simulationMutations.pauseMutation.isPending ||
+        simulationMutations.stopMutation.isPending;
+    const simulationControlError =
+        simulationMutations.buildMutation.error ||
+        simulationMutations.startMutation.error ||
+        simulationMutations.stepMutation.error ||
+        simulationMutations.runMutation.error ||
+        simulationMutations.pauseMutation.error ||
+        simulationMutations.stopMutation.error;
 
     return (
         <div>
             <h1>{simulationQuery.data?.name ?? t('simulation')}</h1>
+            <Controls
+                onStart={() => simulationMutations.buildMutation.mutate()}
+                onStep={() => simulationMutations.stepMutation.mutate()}
+                onRun={() => simulationMutations.runMutation.mutate()}
+                onPause={() => simulationMutations.pauseMutation.mutate()}
+                onStop={() => simulationMutations.stopMutation.mutate()}
+                isBusy={isSimulationControlBusy}
+            />
+            {simulationControlError && (
+                <p className="form-error">{getErrorMessage(simulationControlError)}</p>
+            )}
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                 <button onClick={() => setActiveModal("territory")}>
                     {t("create_territory")}
@@ -136,18 +166,28 @@ export function SimulationPage() {
                         : t("select_target_node")}
                 </p>
             )}
-            <TerritoryGraphComponent
-                graph={graph}
-                width={800}
-                height={600}
-                selectedNodeId={selectedNodeId}
-                onNodeClick={handleTerritoryClick}
-                selectedEdgeId={null}
-                onEdgeClick={() => { }}
-                onNodePositionChange={(territoryId, position) => {
-                    territoryMutations.updatePositionMutation.mutate({ territoryId, position });
-                }}
-                canDragNodes={!isEdgeMode} />
+            <div className="simulation-workspace">
+                <div className="simulation-workspace__graph">
+                    <TerritoryGraphComponent
+                        graph={graph}
+                        width={800}
+                        height={600}
+                        selectedNodeId={selectedNodeId}
+                        onNodeClick={handleTerritoryClick}
+                        selectedEdgeId={null}
+                        onEdgeClick={() => { }}
+                        onNodePositionChange={(territoryId, position) => {
+                            territoryMutations.updatePositionMutation.mutate({ territoryId, position });
+                        }}
+                        canDragNodes={!isEdgeMode} />
+                </div>
+                <StepResult
+                    status={simulationQuery.data?.status}
+                    tick={simulationQuery.data?.tick}
+                    lastLog={simulationQuery.data?.last_log ?? null}
+                />
+            </div>
+            <MetricsCharts logs={simulationQuery.data?.logs ?? []} />
             {activeModal === "territory" && (
                 <Modal title={t("create_territory")} onClose={() => setActiveModal(null)}>
                     <NewTerritory
@@ -278,4 +318,11 @@ export function SimulationPage() {
             )}
         </div>
     );
+}
+
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    return String(error);
 }

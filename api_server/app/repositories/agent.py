@@ -47,3 +47,9 @@ class AgentRepository(Repository):
             )
         )
         return link.simulation_id if link else None
+
+    async def simulation_id_for_agent(self, agent_id: int) -> int | None:
+        link = await self.session.scalar(
+            select(SimulationAgentRelation).where(SimulationAgentRelation.agent_id == agent_id)
+        )
+        return link.simulation_id if link else None

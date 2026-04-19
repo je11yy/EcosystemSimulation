@@ -29,6 +29,7 @@ class StepResult(BaseModel):
 class TickMetrics(BaseModel):
     alive_population: int = 0
     avg_hunger: float = 0.0
+    avg_satisfaction: float = 0.0
     occupancy_by_territory: Dict[int, int] = Field(default_factory=dict)
     deaths_by_reason: Dict[str, int] = Field(default_factory=dict)
     successful_hunts: int = 0

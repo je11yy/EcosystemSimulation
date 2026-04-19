@@ -16,4 +16,5 @@ export const GENE_EFFECT_TYPES: Option[] = [
     { id: 13, name: "CARNIVORE_DIGESTION" },
     { id: 14, name: "CANNIBAL_TOLERANCE" },
     { id: 15, name: "SOCIAL_TOLERANCE" },
+    { id: 16, name: "MUTATION_RATE" },
 ];

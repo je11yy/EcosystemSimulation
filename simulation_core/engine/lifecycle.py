@@ -46,6 +46,11 @@ class LifecycleResolver:
                     parent_id=str(agent.state.id),
                     child_id=str(child_id),
                     tick=tick,
+                    partner_id=(
+                        str(agent.pending_partner_id)
+                        if agent.pending_partner_id is not None
+                        else None
+                    ),
                 )
             )
             agent.state.is_pregnant = False

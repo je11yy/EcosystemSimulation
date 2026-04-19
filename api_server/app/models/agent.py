@@ -32,7 +32,7 @@ class Agent(Base):
     hp: Mapped[float] = mapped_column(Float, default=100.0)
     is_pregnant: Mapped[bool] = mapped_column(Boolean, default=False)
     ticks_to_birth: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    satisfaction: Mapped[float] = mapped_column(Float, default=0.0)
+    satisfaction: Mapped[float] = mapped_column(Float, default=3.0)
     hunt_cooldown: Mapped[int] = mapped_column(Integer, default=0)
     strength: Mapped[float] = mapped_column(Float, default=1.0)
     defense: Mapped[float] = mapped_column(Float, default=1.0)

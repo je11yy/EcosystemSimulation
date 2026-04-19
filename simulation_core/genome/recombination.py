@@ -3,6 +3,7 @@ from random import Random
 from typing import Dict, Optional, Set, Tuple
 
 from .compatibility import GenomeCompatibilityCalculator
+from .effect_type import GeneEffectType
 from .models import Gene, Genome
 from .mutation import GenomeMutationResult, GenomeMutator
 
@@ -119,7 +120,11 @@ class GenomeRecombinator:
         mutation_result = None
         result_genome = child
         if self.config.apply_mutations:
-            mutation_result = self.mutator.mutate(child, rng)
+            mutation_result = self.mutator.mutate(
+                child,
+                rng,
+                rate_multiplier=_mutation_rate_multiplier(left, right),
+            )
             result_genome = mutation_result.genome
 
         return GenomeRecombinationResult(
@@ -283,6 +288,18 @@ def _copy_gene(gene: Gene, gene_id: int) -> Gene:
         default_active=gene.default_active,
         is_active=False,
     )
+
+
+def _mutation_rate_multiplier(left: Genome, right: Genome) -> float:
+    weights = [
+        gene.weight
+        for genome in (left, right)
+        for gene in genome.genes.values()
+        if gene.is_active and gene.effect_type == GeneEffectType.MUTATION_RATE
+    ]
+    if not weights:
+        return 1.0
+    return max(0.0, sum(weights) / len(weights))
 
 
 def _combined_gene_name(left: Gene, right: Gene) -> str:

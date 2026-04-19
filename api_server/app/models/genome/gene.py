@@ -23,7 +23,7 @@ class Gene(Base):
             "'DISPERSAL_DRIVE', 'SITE_FIDELITY', 'REPRODUCTION_DRIVE', "
             "'HEAT_RESISTANCE', 'COLD_RESISTANCE', 'AGGRESSION_DRIVE', "
             "'PREDATION_DRIVE', 'CARNIVORE_DIGESTION', 'CANNIBAL_TOLERANCE', "
-            "'SOCIAL_TOLERANCE')",
+            "'SOCIAL_TOLERANCE', 'MUTATION_RATE')",
             name="ck_genes_effect_type",
         ),
         CheckConstraint("weight >= 0", name="ck_genes_weight_non_negative"),

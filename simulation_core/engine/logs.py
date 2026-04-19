@@ -43,6 +43,7 @@ class BirthResult:
     parent_id: str
     child_id: str
     tick: int
+    partner_id: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -70,6 +71,7 @@ class HuntEvent:
 class Metrics:
     alive_population: int
     avg_hunger: float
+    avg_satisfaction: float
     occupancy_by_territory: dict[str, int]
     deaths_by_reason: dict[str, int]
     successful_hunts: int

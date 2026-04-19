@@ -2,8 +2,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, DbSession
-from app.enums import SimulationStatus
 from app.schemas import Response, SimulationCreate, SimulationDetails, SimulationRead
+from app.services.scenario import ScenarioService
 from app.services.simulation.service import SimulationService
 
 router = APIRouter(prefix="/simulations", tags=["simulations"])
@@ -11,6 +11,16 @@ router = APIRouter(prefix="/simulations", tags=["simulations"])
 
 class SimulationNameUpdate(BaseModel):
     name: str
+
+
+class ScenarioPresetRead(BaseModel):
+    key: str
+    name: str
+    description: str
+
+
+class ScenarioCreateResponse(Response):
+    simulation_id: int
 
 
 @router.get("", response_model=list[SimulationRead])
@@ -26,6 +36,25 @@ async def create_simulation(
 ) -> Response:
     await SimulationService(db).create(current_user.id, simulation)
     return Response(success=True, message="Simulation created")
+
+
+@router.get("/scenarios", response_model=list[ScenarioPresetRead])
+async def get_scenario_presets(current_user: CurrentUser, db: DbSession) -> list[dict]:
+    return await ScenarioService(db).list_scenarios()
+
+
+@router.post("/scenarios/{scenario_key}", response_model=ScenarioCreateResponse)
+async def create_simulation_from_scenario(
+    scenario_key: str,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> ScenarioCreateResponse:
+    simulation_id = await ScenarioService(db).create_from_scenario(current_user.id, scenario_key)
+    return ScenarioCreateResponse(
+        success=True,
+        message="Scenario created",
+        simulation_id=simulation_id,
+    )
 
 
 @router.get("/{simulation_id}", response_model=SimulationDetails)
@@ -64,12 +93,18 @@ async def start_simulation(
     current_user: CurrentUser,
     db: DbSession,
 ) -> Response:
-    await SimulationService(db).set_status(
-        current_user.id,
-        simulation_id,
-        SimulationStatus.RUNNING,
-    )
+    await SimulationService(db).start(current_user.id, simulation_id)
     return Response(success=True, message="Simulation started")
+
+
+@router.post("/{simulation_id}/build", response_model=Response)
+async def build_simulation(
+    simulation_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> Response:
+    await SimulationService(db).build_runtime(current_user.id, simulation_id)
+    return Response(success=True, message="Simulation built")
 
 
 @router.post("/{simulation_id}/run", response_model=Response)
@@ -78,11 +113,7 @@ async def run_simulation(
     current_user: CurrentUser,
     db: DbSession,
 ) -> Response:
-    await SimulationService(db).set_status(
-        current_user.id,
-        simulation_id,
-        SimulationStatus.RUNNING,
-    )
+    await SimulationService(db).start(current_user.id, simulation_id)
     return Response(success=True, message="Simulation running")
 
 
@@ -92,11 +123,7 @@ async def pause_simulation(
     current_user: CurrentUser,
     db: DbSession,
 ) -> Response:
-    await SimulationService(db).set_status(
-        current_user.id,
-        simulation_id,
-        SimulationStatus.PAUSED,
-    )
+    await SimulationService(db).pause(current_user.id, simulation_id)
     return Response(success=True, message="Simulation paused")
 
 
@@ -106,11 +133,7 @@ async def stop_simulation(
     current_user: CurrentUser,
     db: DbSession,
 ) -> Response:
-    await SimulationService(db).set_status(
-        current_user.id,
-        simulation_id,
-        SimulationStatus.STOPPED,
-    )
+    await SimulationService(db).stop(current_user.id, simulation_id)
     return Response(success=True, message="Simulation stopped")
 
 

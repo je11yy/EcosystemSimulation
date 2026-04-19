@@ -18,6 +18,7 @@ class TraitVector:
     carnivore_digestion: float = 1.0
     cannibal_tolerance: float = 0.0
     social_tolerance: float = 0.0
+    mutation_rate: float = 1.0
 
 
 class TraitAggregator:
@@ -40,6 +41,7 @@ class TraitAggregator:
             carnivore_digestion=self.sum_or_default(GeneEffectType.CARNIVORE_DIGESTION),
             cannibal_tolerance=self.total(GeneEffectType.CANNIBAL_TOLERANCE),
             social_tolerance=self.total(GeneEffectType.SOCIAL_TOLERANCE),
+            mutation_rate=max(0.0, self.multiplier(GeneEffectType.MUTATION_RATE)),
         )
 
     def multiplier(self, effect_type: GeneEffectType) -> float:

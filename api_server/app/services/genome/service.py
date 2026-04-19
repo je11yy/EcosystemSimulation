@@ -1,26 +1,39 @@
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.mappers.genome import genome_list_item_to_dict, genome_to_dict
 from app.models import Gene, GeneEdge, Genome
+from app.models.relations.genome_agent import GenomeAgentRelation
 from app.models.relations.genome_gene import GenomeGeneRelation
 from app.models.relations.genome_user import GenomeUserRelation
+from app.models.relations.simulation_agent import SimulationAgentRelation
 from app.repositories.genome.genome import GenomeRepository
 from app.schemas import GeneCreate, GeneEdgeCreate, GenomeCreate, Position
+from app.services.scenario import ScenarioService
+from app.services.simulation.runtime_orchestrator import SimulationRuntimeOrchestrator
 
 
 class GenomeService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.genomes = GenomeRepository(session)
+        self.runtime_orchestrator = SimulationRuntimeOrchestrator(session)
 
     async def list_by_user(self, user_id: int) -> list[dict]:
+        await ScenarioService(self.session).ensure_template_genomes()
+        await self.session.commit()
         rows = await self.genomes.list_by_user(user_id)
         return [genome_list_item_to_dict(genome, owner_id) for genome, owner_id in rows]
 
     async def available_for_user(self, user_id: int) -> list[dict]:
+        await ScenarioService(self.session).ensure_template_genomes()
+        await self.session.commit()
         genomes = await self.genomes.available_for_user(user_id)
-        return [{"id": genome.id, "name": genome.name} for genome in genomes]
+        return [
+            {"id": genome.id, "name": genome.name, "is_template": genome.is_template}
+            for genome in genomes
+        ]
 
     async def create(self, user_id: int, payload: GenomeCreate) -> None:
         genome = Genome(name=payload.name)
@@ -39,6 +52,7 @@ class GenomeService:
         genome = await self.genomes.get_owned(genome_id, user_id)
         if genome is None:
             raise HTTPException(status_code=404, detail="Genome not found")
+        await self._mark_related_simulations_stale(genome_id, user_id)
 
         gene = Gene(
             name=payload.name,
@@ -62,6 +76,7 @@ class GenomeService:
         payload: GeneCreate,
     ) -> None:
         gene = await self._get_owned_gene(genome_id, gene_id, user_id)
+        await self._mark_related_simulations_stale(genome_id, user_id)
         gene.name = payload.name
         gene.effect_type = payload.effect_type.value
         gene.threshold = payload.threshold
@@ -73,6 +88,7 @@ class GenomeService:
 
     async def delete_gene(self, genome_id: int, gene_id: int, user_id: int) -> None:
         gene = await self._get_owned_gene(genome_id, gene_id, user_id)
+        await self._mark_related_simulations_stale(genome_id, user_id)
         await self.session.delete(gene)
         await self.session.commit()
 
@@ -89,6 +105,7 @@ class GenomeService:
             )
         if payload.source == payload.target:
             raise HTTPException(status_code=400, detail="Edge cannot point to itself")
+        await self._mark_related_simulations_stale(genome_id, user_id)
 
         self.session.add(
             GeneEdge(
@@ -124,3 +141,18 @@ class GenomeService:
         if gene is None:
             raise HTTPException(status_code=404, detail="Gene not found")
         return gene
+
+    async def _mark_related_simulations_stale(self, genome_id: int, user_id: int) -> None:
+        simulation_ids = (
+            await self.session.scalars(
+                select(SimulationAgentRelation.simulation_id)
+                .join(
+                    GenomeAgentRelation,
+                    GenomeAgentRelation.agent_id == SimulationAgentRelation.agent_id,
+                )
+                .where(GenomeAgentRelation.genome_id == genome_id)
+                .distinct()
+            )
+        ).all()
+        for simulation_id in simulation_ids:
+            await self.runtime_orchestrator.mark_runtime_stale(user_id, simulation_id)

@@ -20,7 +20,14 @@ export function Controls({
     const { t } = useTranslation();
 
     return (
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <div
+            style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                marginBottom: 16,
+            }}
+        >
             <button
                 type="button"
                 onClick={onStart}
@@ -31,6 +38,7 @@ export function Controls({
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M5 3.5L12.5 8L5 12.5V3.5Z" />
                 </svg>
+                <span>{t("start")}</span>
             </button>
             <button
                 type="button"
@@ -44,6 +52,7 @@ export function Controls({
                     <path d="M10 3.5L15.5 8L10 12.5V3.5Z" />
                     <rect x="1" y="3" width="2" height="10" rx="0.5" />
                 </svg>
+                <span>{t("step")}</span>
             </button>
             <button
                 type="button"
@@ -56,6 +65,7 @@ export function Controls({
                     <path d="M3 3.5L8.5 8L3 12.5V3.5Z" />
                     <path d="M8 3.5L13.5 8L8 12.5V3.5Z" />
                 </svg>
+                <span>{t("run")}</span>
             </button>
             <button
                 type="button"
@@ -68,6 +78,7 @@ export function Controls({
                     <rect x="3" y="3" width="3" height="10" rx="0.75" />
                     <rect x="10" y="3" width="3" height="10" rx="0.75" />
                 </svg>
+                <span>{t("pause")}</span>
             </button>
             <button
                 type="button"
@@ -79,6 +90,7 @@ export function Controls({
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <rect x="3" y="3" width="10" height="10" rx="1" />
                 </svg>
+                <span>{t("stop")}</span>
             </button>
         </div>
     );

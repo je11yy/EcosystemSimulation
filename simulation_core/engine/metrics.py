@@ -21,12 +21,17 @@ class MetricsCollector:
             deaths_by_reason[death.reason] = deaths_by_reason.get(death.reason, 0) + 1
 
         avg_hunger = 0.0
+        avg_satisfaction = 0.0
         if alive_agents:
             avg_hunger = sum(agent.state.hunger for agent in alive_agents) / len(alive_agents)
+            avg_satisfaction = sum(agent.state.satisfaction for agent in alive_agents) / len(
+                alive_agents
+            )
 
         return Metrics(
             alive_population=len(alive_agents),
             avg_hunger=avg_hunger,
+            avg_satisfaction=avg_satisfaction,
             occupancy_by_territory=occupancy_by_territory,
             deaths_by_reason=deaths_by_reason,
             successful_hunts=sum(1 for hunt in hunts if hunt.success),

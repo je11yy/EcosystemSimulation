@@ -24,6 +24,7 @@ from .logs import (
     StepResult,
 )
 from .metrics import MetricsCollector
+from .satisfaction import SatisfactionUpdater
 
 
 class Engine:
@@ -36,13 +37,14 @@ class Engine:
         self.observer = AgentObserver()
         self.policy = SimpleSoftmaxPolicy()
         self.recombinator = GenomeRecombinator()
-        self.rng = random.Random()
+        self.rng = random.Random(self.cfg.random_seed)
         self.tick = 0
         self.logs: list[Log] = []
         self.metrics_history: list[Metrics] = []
         self.dead_agent_ids: set[int] = set()
         self.lifecycle_resolver = LifecycleResolver(self.cfg, self.dead_agent_ids)
         self.metrics_collector = MetricsCollector()
+        self.satisfaction_updater = SatisfactionUpdater(self.cfg)
 
     def add_agent(self, state, genome):
         self.agents.add(state, genome)
@@ -73,6 +75,10 @@ class Engine:
         for agent in self.agents.all():
             self.refresh_agent(agent.state.id)
 
+    def update_satisfaction(self):
+        self.refresh_agents()
+        self.satisfaction_updater.update(self.agents, self.world)
+
     def apply_action_cost(self, agent_id, action):
         agent = self.agents.get(agent_id)
         return self.action_applier.apply_cost(agent, action)
@@ -81,6 +87,8 @@ class Engine:
         self.world.regenerate_food()
 
     def step(self) -> StepResult:
+        # Решения используют удовлетворенность, рассчитанную на предыдущем тике.
+        # Новая удовлетворенность считается ниже как результат текущего шага.
         self.refresh_agents()
 
         decisions: list[Decision] = []
@@ -128,6 +136,7 @@ class Engine:
         deaths.extend(self.lifecycle_resolver.apply_starvation_damage(self.agents, self.tick))
         self.lifecycle_resolver.decay_hunt_cooldowns(self.agents)
         self.regenerate_territories()
+        self.update_satisfaction()
         self.refresh_agents()
 
         metrics = self.metrics_collector.collect(
