@@ -11,4 +11,4 @@ pip install -r requirements.txt
 ```
 docker compose down (-v для обнуления бд)
 docker compose up --build
-``
+```
