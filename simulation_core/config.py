@@ -29,6 +29,7 @@ class SimConfig:
     random_seed: Optional[int] = None
 
     pregnancy_duration_ticks: int = 3
+    mate_genome_compatibility_min_score: float = 0.65
     hunt_cooldown_ticks: int = 2
     mate_reconsider_hunger_threshold: float = 0.8
     mate_reconsider_score_margin: float = 0.15

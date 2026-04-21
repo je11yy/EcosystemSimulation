@@ -10,6 +10,7 @@ from .costs import ActionCostCalculator
 @dataclass(frozen=True)
 class DecisionContext:
     agent: Agent
+    agents: AgentRegistry
     world: WorldState
     observation: Observation
     cost_calculator: ActionCostCalculator

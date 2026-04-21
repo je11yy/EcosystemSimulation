@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
 from ...enums import AgentActionType
+from ...genome import GenomeCompatibilityCalculator
 from ..actions import ActionOption, ScoredOption
 from ..observation import Observation, ObservedAgent, ObservedTerritory
 from .weights import PolicyScoreWeights
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 class SimpleSoftmaxPolicy:
     beta: Optional[float] = None
     weights: PolicyScoreWeights = PolicyScoreWeights()
+    compatibility_calculator: GenomeCompatibilityCalculator = GenomeCompatibilityCalculator()
 
     def choose_action(
         self,
@@ -220,6 +222,7 @@ class SimpleSoftmaxPolicy:
             if partner.is_alive
             and partner.sex != context.agent.state.sex
             and partner.id != context.agent.state.id
+            and self._is_compatible_partner(context, partner.id)
         ]
 
     def _hunt_options(self, context: "DecisionContext") -> list[ActionOption]:
@@ -304,3 +307,15 @@ class SimpleSoftmaxPolicy:
         if max_value <= 0:
             return 0.0
         return max(0.0, min(1.0, value / max_value))
+
+    def _is_compatible_partner(self, context: "DecisionContext", partner_id: int) -> bool:
+        try:
+            partner = context.agents.get(partner_id)
+        except KeyError:
+            return False
+
+        return self.compatibility_calculator.is_compatible(
+            context.agent.genome,
+            partner.genome,
+            min_score=context.cost_calculator.cfg.mate_genome_compatibility_min_score,
+        )
