@@ -4,7 +4,7 @@ from ..agent.actions import ActionOption
 from ..agent.registry import Agent
 from ..config import SimConfig
 from ..enums import AgentActionType, AgentSex
-from ..genome import GenomeRecombinator
+from ..genome import GenomeCompatibilityCalculator, GenomeRecombinator
 from ..world import WorldState
 from .costs import ActionCost, ActionCostCalculator, apply_action_cost
 from .logs import AppliedActionResult
@@ -14,6 +14,7 @@ class ActionApplier:
     def __init__(self, cfg: SimConfig):
         self.cfg = cfg
         self.cost_calculator = ActionCostCalculator(cfg)
+        self.compatibility_calculator = GenomeCompatibilityCalculator()
 
     def apply_cost(self, agent: Agent, action: ActionOption) -> ActionCost:
         cost = self.cost_calculator.calculate(agent.state, action)
@@ -81,6 +82,12 @@ class ActionApplier:
         mother, father = _parents(agent, partner)
         if mother.state.is_pregnant:
             return self.failed_result(agent, action, "mother_already_pregnant", cost)
+        if not self.compatibility_calculator.is_compatible(
+            mother.genome,
+            father.genome,
+            min_score=self.cfg.mate_genome_compatibility_min_score,
+        ):
+            return self.failed_result(agent, action, "partner_genome_incompatible", cost)
 
         child_genome = recombinator.recombine(mother.genome, father.genome, rng).genome
         mother.state.is_pregnant = True

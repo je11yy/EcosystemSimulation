@@ -60,6 +60,7 @@ class Engine:
         observation = self.observer.build(agent, self.world, self.agents)
         return DecisionContext(
             agent=agent,
+            agents=self.agents,
             world=self.world,
             observation=observation,
             cost_calculator=self.action_applier.cost_calculator,
