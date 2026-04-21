@@ -170,7 +170,7 @@ export type GeneEffectType =
     | "MUTATION_RATE";
 
 export interface GeneCreate {
-    name: string;
+    name?: string;
     effect_type: GeneEffectType | string;
     weight: number;
     threshold: number;
@@ -190,10 +190,12 @@ export interface AvailableGenome {
     id: number;
     name: string;
     is_template: boolean;
+    template_key?: string | null;
 }
 
 export interface Genome extends AvailableGenome {
     description?: string | null;
+    is_owned?: boolean;
     genes: Gene[];
     edges: Edge[];
 }
@@ -204,5 +206,6 @@ export interface GenomeList {
     user_id: number | null;
     description?: string | null;
     is_template: boolean;
+    template_key?: string | null;
     updated_at: string;
 }

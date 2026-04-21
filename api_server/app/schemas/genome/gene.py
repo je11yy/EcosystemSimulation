@@ -6,7 +6,7 @@ from ..base import Node, Position
 
 
 class GeneCreate(BaseModel):
-    name: str
+    name: str = ""
     effect_type: GeneEffectType
     threshold: float = Field(
         default=0.0,

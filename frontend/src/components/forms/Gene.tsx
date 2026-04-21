@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { GeneCreate } from "src/api/types";
 import { getGeneEffectMeta } from "src/constants/geneEffectMeta";
+import { getGeneEffectLabel } from "src/i18n/meta";
 import type { Option } from "./types";
 
 interface NewGeneProps {
@@ -13,7 +14,6 @@ interface NewGeneProps {
 
 export function NewGene({ availableEffectTypes, onCreate, initialValue, submitLabel }: NewGeneProps) {
     const { t } = useTranslation();
-    const [name, setName] = useState(initialValue?.name ?? "");
     const [selectedEffectType, setSelectedEffectType] = useState<string>(
         initialValue?.effect_type ?? availableEffectTypes[0]?.name ?? "",
     );
@@ -26,7 +26,6 @@ export function NewGene({ availableEffectTypes, onCreate, initialValue, submitLa
 
     const handleSubmit = () => {
         onCreate({
-            name: name || selectedEffectType,
             effect_type: selectedEffectType,
             weight,
             threshold,
@@ -38,15 +37,6 @@ export function NewGene({ availableEffectTypes, onCreate, initialValue, submitLa
     return (
         <div>
             <div>
-                <label htmlFor="geneName">{t('gene_name')}:</label>
-                <input
-                    id="geneName"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={selectedEffectType}
-                />
-            </div>
-            <div>
                 <label>{t('effectType')}:</label>
                 {availableEffectTypes.map(effectType => (
                     <div key={effectType.id}>
@@ -57,7 +47,9 @@ export function NewGene({ availableEffectTypes, onCreate, initialValue, submitLa
                             checked={selectedEffectType === effectType.name}
                             onChange={() => setSelectedEffectType(effectType.name)}
                         />
-                        <label htmlFor={`effectType-${effectType.id}`}>{effectType.name}</label>
+                        <label htmlFor={`effectType-${effectType.id}`}>
+                            {getGeneEffectLabel(effectType.name, t)}
+                        </label>
                     </div>
                 ))}
                 <p className="form-hint">{t(effectMeta.descriptionKey)}</p>

@@ -11,10 +11,12 @@ class AvailableGenome(BaseModel):
     id: int
     name: str
     is_template: bool = False
+    template_key: Optional[str] = None
 
 
 class GenomeRead(AvailableGenome):
     description: Optional[str] = None
+    is_owned: bool = False
     genes: List[Gene] = []
     edges: List[GeneEdge] = []
 

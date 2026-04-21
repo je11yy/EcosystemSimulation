@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getGeneEffectLabel } from "src/i18n/meta";
 import type { Option } from "./types";
 
 interface NewEdgeProps {
@@ -22,7 +23,9 @@ export function NewEdge({ sourceOptions, targetOptions = sourceOptions, onCreate
                 <label htmlFor="edgeSource">{t("source")}:</label>
                 <select id="edgeSource" value={source} onChange={(e) => setSource(Number(e.target.value))}>
                     {sourceOptions.map(option => (
-                        <option key={option.id} value={option.id}>{option.name}</option>
+                        <option key={option.id} value={option.id}>
+                            {getGeneEffectLabel(option.name, t)}
+                        </option>
                     ))}
                 </select>
             </div>
@@ -30,7 +33,9 @@ export function NewEdge({ sourceOptions, targetOptions = sourceOptions, onCreate
                 <label htmlFor="edgeTarget">{t("target")}:</label>
                 <select id="edgeTarget" value={target} onChange={(e) => setTarget(Number(e.target.value))}>
                     {targetOptions.map(option => (
-                        <option key={option.id} value={option.id}>{option.name}</option>
+                        <option key={option.id} value={option.id}>
+                            {getGeneEffectLabel(option.name, t)}
+                        </option>
                     ))}
                 </select>
             </div>

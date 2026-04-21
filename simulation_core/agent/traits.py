@@ -13,9 +13,9 @@ class TraitVector:
     reproduction_drive: float = 1.0
     heat_resistance: float = 0.0
     cold_resistance: float = 0.0
-    aggression_drive: float = 1.0
-    predation_drive: float = 1.0
-    carnivore_digestion: float = 1.0
+    aggression_drive: float = 0.0
+    predation_drive: float = 0.0
+    carnivore_digestion: float = 0.0
     cannibal_tolerance: float = 0.0
     social_tolerance: float = 0.0
     mutation_rate: float = 1.0
@@ -36,9 +36,12 @@ class TraitAggregator:
             reproduction_drive=self.sum_or_default(GeneEffectType.REPRODUCTION_DRIVE),
             heat_resistance=self.total(GeneEffectType.HEAT_RESISTANCE),
             cold_resistance=self.total(GeneEffectType.COLD_RESISTANCE),
-            aggression_drive=self.sum_or_default(GeneEffectType.AGGRESSION_DRIVE),
-            predation_drive=self.sum_or_default(GeneEffectType.PREDATION_DRIVE),
-            carnivore_digestion=self.sum_or_default(GeneEffectType.CARNIVORE_DIGESTION),
+            aggression_drive=self.sum_or_default(GeneEffectType.AGGRESSION_DRIVE, default=0.0),
+            predation_drive=self.sum_or_default(GeneEffectType.PREDATION_DRIVE, default=0.0),
+            carnivore_digestion=self.sum_or_default(
+                GeneEffectType.CARNIVORE_DIGESTION,
+                default=0.0,
+            ),
             cannibal_tolerance=self.total(GeneEffectType.CANNIBAL_TOLERANCE),
             social_tolerance=self.total(GeneEffectType.SOCIAL_TOLERANCE),
             mutation_rate=max(0.0, self.multiplier(GeneEffectType.MUTATION_RATE)),

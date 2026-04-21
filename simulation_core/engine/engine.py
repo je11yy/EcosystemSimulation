@@ -1,9 +1,10 @@
 import random
+from collections import defaultdict
 
 from ..agent.actions import ActionOption
 from ..agent.observer import AgentObserver
 from ..agent.policy.simple_softmax import SimpleSoftmaxPolicy
-from ..agent.registry import Agent, AgentRegistry
+from ..agent.registry import AgentRegistry
 from ..config import SimConfig
 from ..enums import AgentActionType
 from ..genome import GenomeRecombinator
@@ -97,7 +98,7 @@ class Engine:
         hunts: list[HuntEvent] = []
         deaths: list[DeathResult] = []
         births: list[BirthResult] = []
-        decision_buffer: list[tuple[Agent, ActionOption]] = []
+        decisions_by_agent_id: dict[int, ActionOption] = {}
 
         for agent in self.agents.all():
             if not agent.state.is_alive:
@@ -114,9 +115,13 @@ class Engine:
                     cost=cost,
                 )
             )
-            decision_buffer.append((agent, chosen))
+            decisions_by_agent_id[agent.state.id] = chosen
 
-        eat_claims = self._apply_non_eat_actions(decision_buffer, applied_results, hunts)
+        eat_claims = self._resolve_actions(
+            decisions_by_agent_id,
+            applied_results,
+            hunts,
+        )
         eat_results, fight_events = self.food_conflict_resolver.resolve(
             eat_claims,
             self.world,
@@ -169,15 +174,31 @@ class Engine:
         self.tick += 1
         return result
 
-    def _apply_non_eat_actions(
+    def _resolve_actions(
         self,
-        decision_buffer: list[tuple[Agent, ActionOption]],
+        decisions_by_agent_id: dict[int, ActionOption],
         applied_results: list[AppliedActionResult],
         hunts: list[HuntEvent],
     ) -> EatClaims:
         eat_claims = self.food_conflict_resolver.empty_claims()
+        consumed_agent_ids: set[int] = set()
 
-        for agent, action in decision_buffer:
+        self._resolve_hunts(
+            decisions_by_agent_id,
+            applied_results,
+            hunts,
+            consumed_agent_ids,
+        )
+        self._resolve_mutual_mates(
+            decisions_by_agent_id,
+            applied_results,
+            consumed_agent_ids,
+        )
+
+        for agent_id, action in decisions_by_agent_id.items():
+            if agent_id in consumed_agent_ids:
+                continue
+            agent = self.agents.get(agent_id)
             if not agent.state.is_alive:
                 applied_results.append(
                     self.action_applier.failed_result(
@@ -200,6 +221,28 @@ class Engine:
                 )
                 continue
 
+            if action.type == AgentActionType.MATE:
+                applied_results.append(
+                    self.action_applier.failed_result(
+                        agent,
+                        action,
+                        "partner_not_reciprocating",
+                        cost,
+                    )
+                )
+                continue
+
+            if action.type == AgentActionType.HUNT:
+                applied_results.append(
+                    self.action_applier.failed_result(
+                        agent,
+                        action,
+                        "target_not_engaged",
+                        cost,
+                    )
+                )
+                continue
+
             if action.type == AgentActionType.EAT:
                 eat_claims[agent.state.location].append((agent, cost))
                 continue
@@ -210,43 +253,222 @@ class Engine:
                 applied_results.append(
                     self.action_applier.apply_move(agent, action, cost, self.world)
                 )
-            elif action.type == AgentActionType.MATE:
-                applied_results.append(
-                    self.action_applier.apply_mate(
-                        agent,
-                        action,
-                        cost,
-                        self.agents,
-                        self.recombinator,
-                        self.rng,
-                    )
-                )
-            elif action.type == AgentActionType.HUNT:
-                result = self.action_applier.apply_hunt(
-                    agent,
-                    action,
-                    cost,
-                    self.agents,
-                    self.rng,
-                )
-                applied_results.append(result)
-                if action.target_id is not None:
-                    hunts.append(
-                        HuntEvent(
-                            territory_id=str(agent.state.location),
-                            hunter_id=str(agent.state.id),
-                            target_id=str(action.target_id),
-                            success=result.success,
-                            damage_to_target=result.damage_to_target,
-                            damage_to_hunter=result.hp_loss,
-                            target_died=result.target_died,
-                            hunter_died=result.actor_died,
-                            hunger_restored=result.hunger_restored,
-                        )
-                    )
             else:
                 applied_results.append(
                     self.action_applier.failed_result(agent, action, "unsupported_action")
                 )
 
         return eat_claims
+
+    def _resolve_mutual_mates(
+        self,
+        decisions_by_agent_id: dict[int, ActionOption],
+        applied_results: list[AppliedActionResult],
+        consumed_agent_ids: set[int],
+    ) -> None:
+        for agent_id, action in decisions_by_agent_id.items():
+            if action.type != AgentActionType.MATE or agent_id in consumed_agent_ids:
+                continue
+            if action.partner_id is None:
+                continue
+            if action.partner_id in consumed_agent_ids:
+                continue
+
+            partner_action = decisions_by_agent_id.get(action.partner_id)
+            is_mutual = (
+                partner_action is not None
+                and partner_action.type == AgentActionType.MATE
+                and partner_action.partner_id == agent_id
+            )
+            if not is_mutual and not self._should_accept_mate_request(action.partner_id, agent_id):
+                continue
+
+            if (
+                partner_action is None
+                or partner_action.type != AgentActionType.MATE
+                or partner_action.partner_id != agent_id
+            ) and not is_mutual:
+                applied_results.append(
+                    AppliedActionResult(
+                        agent_id=str(action.partner_id),
+                        action_type=partner_action.type.value if partner_action else "rest",
+                        success=False,
+                        reason="replaced_by_mate_reconsideration",
+                    )
+                )
+
+            agent = self.agents.get(agent_id)
+            partner = self.agents.get(action.partner_id)
+            if not agent.state.is_alive or not partner.state.is_alive:
+                continue
+
+            agent_cost = self.action_applier.apply_cost(agent, action)
+            if not agent.state.is_alive:
+                applied_results.append(
+                    self.action_applier.failed_result(
+                        agent,
+                        action,
+                        "exhaustion",
+                        agent_cost,
+                    )
+                )
+                consumed_agent_ids.add(agent_id)
+                continue
+
+            partner_cost = self.action_applier.apply_cost(partner, partner_action)
+            if not partner.state.is_alive:
+                applied_results.append(
+                    self.action_applier.failed_result(
+                        partner,
+                        partner_action,
+                        "exhaustion",
+                        partner_cost,
+                    )
+                )
+                consumed_agent_ids.update({agent_id, action.partner_id})
+                applied_results.append(
+                    self.action_applier.failed_result(
+                        agent,
+                        action,
+                        "partner_exhausted",
+                        agent_cost,
+                    )
+                )
+                continue
+
+            applied_results.append(
+                self.action_applier.apply_mate(
+                    agent,
+                    action,
+                    agent_cost,
+                    self.agents,
+                    self.recombinator,
+                    self.rng,
+                )
+            )
+            applied_results.append(
+                AppliedActionResult(
+                    agent_id=str(partner.state.id),
+                    action_type=AgentActionType.MATE.value,
+                    success=True,
+                    target_id=str(agent.state.id),
+                    hunger_cost=partner_cost.hunger,
+                    hp_loss=partner_cost.hp,
+                    reason="mutual_mate_confirmed" if is_mutual else "mate_reconsidered",
+                )
+            )
+            consumed_agent_ids.update({agent_id, action.partner_id})
+
+    def _should_accept_mate_request(self, agent_id: int, partner_id: int) -> bool:
+        if agent_id in self.agents.agents:
+            agent = self.agents.get(agent_id)
+        else:
+            return False
+        if not agent.state.is_alive:
+            return False
+
+        context = self._build_decision_context(agent)
+        return self.policy.should_accept_mate_request(context, partner_id)
+
+    def _resolve_hunts(
+        self,
+        decisions_by_agent_id: dict[int, ActionOption],
+        applied_results: list[AppliedActionResult],
+        hunts: list[HuntEvent],
+        consumed_agent_ids: set[int],
+    ) -> None:
+        hunts_by_target: dict[int, list[tuple[int, ActionOption]]] = defaultdict(list)
+        for agent_id, action in decisions_by_agent_id.items():
+            if action.type != AgentActionType.HUNT or action.target_id is None:
+                continue
+            hunts_by_target[action.target_id].append((agent_id, action))
+
+        for target_id, hunter_entries in hunts_by_target.items():
+            if target_id in consumed_agent_ids:
+                continue
+
+            try:
+                target = self.agents.get(target_id)
+            except KeyError:
+                continue
+            if not target.state.is_alive:
+                continue
+
+            original_target_action = decisions_by_agent_id.get(target_id)
+            if original_target_action is not None:
+                consumed_agent_ids.add(target_id)
+                applied_results.append(
+                    AppliedActionResult(
+                        agent_id=str(target.state.id),
+                        action_type=original_target_action.type.value,
+                        success=False,
+                        reason="replaced_by_defense",
+                    )
+                )
+            applied_results.append(self.action_applier.apply_defense_reaction(target))
+
+            for hunter_id, action in sorted(hunter_entries, key=lambda item: item[0]):
+                if hunter_id in consumed_agent_ids:
+                    continue
+                hunter = self.agents.get(hunter_id)
+                if not hunter.state.is_alive:
+                    applied_results.append(
+                        self.action_applier.failed_result(
+                            hunter,
+                            action,
+                            "dead_before_resolution",
+                        )
+                    )
+                    consumed_agent_ids.add(hunter_id)
+                    continue
+
+                if not target.state.is_alive or hunter.state.location != target.state.location:
+                    applied_results.append(
+                        self.action_applier.failed_result(
+                            hunter,
+                            action,
+                            "target_unavailable",
+                        )
+                    )
+                    consumed_agent_ids.add(hunter_id)
+                    continue
+
+                cost = self.action_applier.apply_cost(hunter, action)
+                if not hunter.state.is_alive:
+                    applied_results.append(
+                        self.action_applier.failed_result(
+                            hunter,
+                            action,
+                            "exhaustion",
+                            cost,
+                        )
+                    )
+                    consumed_agent_ids.add(hunter_id)
+                    continue
+
+                result = self.action_applier.apply_hunt(
+                    hunter,
+                    action,
+                    cost,
+                    self.agents,
+                    self.rng,
+                    target_defense_multiplier=self.cfg.hunt_defense_reaction_multiplier,
+                )
+                applied_results.append(result)
+                consumed_agent_ids.add(hunter_id)
+                hunts.append(
+                    HuntEvent(
+                        territory_id=str(hunter.state.location),
+                        hunter_id=str(hunter.state.id),
+                        target_id=str(target.state.id),
+                        success=result.success,
+                        damage_to_target=result.damage_to_target,
+                        damage_to_hunter=result.hp_loss,
+                        target_died=result.target_died,
+                        hunter_died=result.actor_died,
+                        hunger_restored=result.hunger_restored,
+                    )
+                )
+
+                if not target.state.is_alive:
+                    break

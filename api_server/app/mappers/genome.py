@@ -2,6 +2,7 @@ from typing import Any
 
 from app.mappers.common import iso, position
 from app.models import Gene, GeneEdge, Genome
+from app.services.scenario.definitions import TEMPLATE_GENOME_KEYS_BY_NAME
 
 
 def gene_to_dict(gene: Gene) -> dict[str, Any]:
@@ -32,6 +33,7 @@ def genome_list_item_to_dict(genome: Genome, user_id: int | None = None) -> dict
         "user_id": user_id if user_id is not None else genome.user_id,
         "description": genome.description,
         "is_template": genome.is_template,
+        "template_key": TEMPLATE_GENOME_KEYS_BY_NAME.get(genome.name),
         "updated_at": iso(genome.updated_at),
     }
 
@@ -45,6 +47,8 @@ def genome_to_dict(genome: Genome) -> dict[str, Any]:
         "name": genome.name,
         "description": genome.description,
         "is_template": genome.is_template,
+        "template_key": TEMPLATE_GENOME_KEYS_BY_NAME.get(genome.name),
         "genes": [gene_to_dict(gene) for gene in genes],
         "edges": [gene_edge_to_dict(edge) for edge in edges],
+        "is_owned": bool(genome.user_links),
     }

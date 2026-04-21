@@ -10,6 +10,7 @@ import { GenomeGraphComponent } from "src/components/gene/Graph";
 import type { Gene } from "src/components/gene/types";
 import { GENE_EFFECT_TYPES } from "src/constants/effectTypes";
 import { useGenomeDetailsMutations } from "src/hooks/genomes/useGenomeMutations";
+import { getGeneEffectLabel, getTemplateGenomeLabel } from "src/i18n/meta";
 
 type GenomeModal = "gene" | "edge-weight" | null;
 type EdgeDraft = { source: number; target: number } | null;
@@ -44,6 +45,15 @@ export function GenomePage() {
     const genes = genome?.genes ?? [];
     const edges = genome?.edges ?? [];
     const isTemplate = genome?.is_template ?? false;
+    const isOwned = genome?.is_owned ?? false;
+    const canEditGenome = !isTemplate && isOwned;
+    const genomeLabel = getTemplateGenomeLabel(
+        genome?.template_key,
+        genome?.name ?? t("genome"),
+        genome?.description,
+        t,
+    );
+    const graphGenes = useMemo(() => autoLayoutGenes(genes), [genes]);
     const geneById = new Map(genes.map(gene => [gene.id, gene]));
     const selectedNodeId = edgeSourceId ?? selectedGene?.id ?? null;
 
@@ -80,11 +90,12 @@ export function GenomePage() {
 
     return (
         <div>
-            <h2>{genome?.name ?? t("genome")}</h2>
-            {genome?.description && <p className="form-hint">{genome.description}</p>}
+            <h2>{genomeLabel.name}</h2>
+            {genomeLabel.description && <p className="form-hint">{genomeLabel.description}</p>}
             {isTemplate && <p className="template-note">{t("template_genome_readonly")}</p>}
+            {!isTemplate && !isOwned && <p className="template-note">{t("runtime_genome_readonly")}</p>}
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                <button onClick={() => setActiveModal("gene")} disabled={isTemplate}>
+                <button onClick={() => setActiveModal("gene")} disabled={!canEditGenome}>
                     {t("add_gene")}
                 </button>
                 <button
@@ -96,7 +107,7 @@ export function GenomePage() {
                             setSelectedGene(null);
                         }
                     }}
-                    disabled={genes.length < 2 || isTemplate}
+                    disabled={genes.length < 2 || !canEditGenome}
                 >
                     {isEdgeMode ? t("cancel_edge_mode") : t("create_edge")}
                 </button>
@@ -112,7 +123,7 @@ export function GenomePage() {
             {genomeQuery.isError && <p>{t("error_loading_genome")}</p>}
             {genome && (
                 <GenomeGraphComponent
-                    graph={{ nodes: genes, edges }}
+                    graph={{ nodes: graphGenes, edges }}
                     width={800}
                     height={600}
                     selectedNodeId={selectedNodeId}
@@ -120,11 +131,11 @@ export function GenomePage() {
                     selectedEdgeId={null}
                     onEdgeClick={() => { }}
                     onNodePositionChange={(geneId, position) => {
-                        if (!isTemplate) {
+                        if (canEditGenome) {
                             updatePositionMutation.mutate({ geneId, position });
                         }
                     }}
-                    canDragNodes={!isEdgeMode && !isTemplate}
+                    canDragNodes={!isEdgeMode && canEditGenome}
                 />
             )}
             {activeModal === "gene" && (
@@ -148,8 +159,8 @@ export function GenomePage() {
                     }}
                 >
                     <NewEdgeWeight
-                        sourceName={`${edgeDraftSource.effect_type} ${edgeDraftSource.id}`}
-                        targetName={`${edgeDraftTarget.effect_type} ${edgeDraftTarget.id}`}
+                        sourceName={`${getGeneEffectLabel(edgeDraftSource.effect_type, t)} ${edgeDraftSource.id}`}
+                        targetName={`${getGeneEffectLabel(edgeDraftTarget.effect_type, t)} ${edgeDraftTarget.id}`}
                         onCreate={(weight) => {
                             createEdgeMutation.mutate(
                                 { source: edgeDraft.source, target: edgeDraft.target, weight },
@@ -177,7 +188,6 @@ export function GenomePage() {
                             <NewGene
                                 availableEffectTypes={GENE_EFFECT_TYPES}
                                 initialValue={{
-                                    name: selectedGene.name,
                                     effect_type: selectedGene.effect_type,
                                     weight: selectedGene.weight,
                                     threshold: selectedGene.threshold,
@@ -199,12 +209,11 @@ export function GenomePage() {
                     ) : (
                         <>
                             <p>{t("id")}: {selectedGene.id}</p>
-                            <p>{t("gene_name")}: {selectedGene.name}</p>
-                            <p>{t("effectType")}: {selectedGene.effect_type}</p>
+                            <p>{t("effectType")}: {getGeneEffectLabel(selectedGene.effect_type, t)}</p>
                             <p>{t("gene_weight")}: {selectedGene.weight}</p>
                             <p>{t("threshold")}: {selectedGene.threshold}</p>
                             {selectedGene.default_active && <p>{t("default_active")}</p>}
-                            {!isTemplate && (
+                            {canEditGenome && (
                                 <div style={{ display: "flex", gap: 8 }}>
                                     <button type="button" onClick={() => setIsEditingGene(true)}>
                                         {t("edit")}
@@ -230,4 +239,32 @@ export function GenomePage() {
             )}
         </div>
     );
+}
+
+function autoLayoutGenes(genes: Gene[]): Gene[] {
+    if (genes.length <= 1) {
+        return genes;
+    }
+
+    const uniquePositions = new Set(
+        genes.map(gene => `${Math.round(gene.position.x)}:${Math.round(gene.position.y)}`),
+    );
+    if (uniquePositions.size > Math.floor(genes.length / 2)) {
+        return genes;
+    }
+
+    const centerX = 400;
+    const centerY = 300;
+    const radius = Math.max(120, genes.length * 18);
+
+    return genes.map((gene, index) => {
+        const angle = (Math.PI * 2 * index) / genes.length;
+        return {
+            ...gene,
+            position: {
+                x: centerX + radius * Math.cos(angle),
+                y: centerY + radius * Math.sin(angle),
+            },
+        };
+    });
 }

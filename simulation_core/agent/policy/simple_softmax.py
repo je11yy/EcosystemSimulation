@@ -69,6 +69,29 @@ class SimpleSoftmaxPolicy:
             for option in self.enumerate_options(context)
         ]
 
+    def should_accept_mate_request(
+        self,
+        context: "DecisionContext",
+        partner_id: int,
+    ) -> bool:
+        hunger_pressure = self._ratio(
+            context.agent.state.hunger,
+            context.cost_calculator.cfg.hunger_max,
+        )
+        if hunger_pressure > context.cost_calculator.cfg.mate_reconsider_hunger_threshold:
+            return False
+
+        mate_option = ActionOption(type=AgentActionType.MATE, partner_id=partner_id)
+        if mate_option not in self._mate_options(context):
+            return False
+
+        mate_score = self.score_single_option(context, mate_option)
+        rest_score = self.score_single_option(
+            context,
+            ActionOption(type=AgentActionType.REST),
+        )
+        return mate_score >= rest_score - context.cost_calculator.cfg.mate_reconsider_score_margin
+
     def score_single_option(self, context: "DecisionContext", option: ActionOption) -> float:
         if option.type == AgentActionType.EAT:
             utility = self.score_eat(context)
@@ -200,6 +223,23 @@ class SimpleSoftmaxPolicy:
         ]
 
     def _hunt_options(self, context: "DecisionContext") -> list[ActionOption]:
+        current_food_ratio = self._ratio(
+            context.current_location.food,
+            context.current_location.food_capacity,
+        )
+        hunger_pressure = self._ratio(
+            context.agent.state.hunger,
+            context.cost_calculator.cfg.hunger_max,
+        )
+        predation_drive = context.agent.state.traits.predation_drive
+
+        if predation_drive <= 0:
+            return []
+        if predation_drive < 1.05:
+            return []
+        if hunger_pressure < 0.4 and current_food_ratio > 0.55 and predation_drive < 1.3:
+            return []
+
         return [
             ActionOption(type=AgentActionType.HUNT, target_id=target.id)
             for target in context.observation.agents

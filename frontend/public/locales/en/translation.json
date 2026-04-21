@@ -40,6 +40,25 @@
     "food_regen_per_tick": "Food regeneration per tick",
     "food_capacity": "Food capacity",
     "effectType": "Effect",
+    "runtime_genome_readonly": "This is a runtime genome from a simulation. It can be viewed, but cannot be edited or deleted.",
+    "gene_effect_label": {
+        "MAX_HP": "Maximum health",
+        "STRENGTH": "Strength",
+        "DEFENSE": "Defense",
+        "METABOLISM": "Metabolism",
+        "HUNGER_DRIVE": "Hunger drive",
+        "DISPERSAL_DRIVE": "Dispersal drive",
+        "SITE_FIDELITY": "Site fidelity",
+        "REPRODUCTION_DRIVE": "Reproduction drive",
+        "HEAT_RESISTANCE": "Heat resistance",
+        "COLD_RESISTANCE": "Cold resistance",
+        "AGGRESSION_DRIVE": "Aggression drive",
+        "PREDATION_DRIVE": "Predation drive",
+        "CARNIVORE_DIGESTION": "Carnivore digestion",
+        "CANNIBAL_TOLERANCE": "Cannibal tolerance",
+        "SOCIAL_TOLERANCE": "Social tolerance",
+        "MUTATION_RATE": "Mutation rate"
+    },
     "threshold": "Activation threshold",
     "gene_weight": "Gene strength",
     "default_active": "Active by default",
@@ -177,6 +196,50 @@
     "create_from_scenario": "Create scenario",
     "template": "Template",
     "template_genome_readonly": "This is a genome template. It can be used in simulations, but cannot be edited or deleted.",
+    "template_genome_meta": {
+        "balanced_grazer": {
+            "name": "Baseline grazer",
+            "description": "Genome with moderate survival, defense, foraging, reproduction, and social-stability parameters for control simulations."
+        },
+        "heat_migrant": {
+            "name": "Heat-tolerant migrant",
+            "description": "Genome with increased heat tolerance and a stronger tendency to move between territories when local conditions degrade."
+        },
+        "cold_social": {
+            "name": "Cold-tolerant social agent",
+            "description": "Genome for cold territories with increased tolerance to low temperatures and high population density."
+        },
+        "predator": {
+            "name": "Predator",
+            "description": "Genome with elevated strength, hunting, aggression, and prey-digestion parameters for resource-pressure scenarios."
+        },
+        "mutable_pioneer": {
+            "name": "Agent with elevated variability",
+            "description": "Genome with increased mutation probability, dispersal tendency, and accelerated reproduction in unstable environments."
+        }
+    },
+    "scenario_meta": {
+        "baseline_mosaic": {
+            "name": "Baseline",
+            "description": "Simulation with 4 territories in a moderate temperature range and agents of two genomes: baseline grazer and predator."
+        },
+        "climate_gradient": {
+            "name": "Climate gradient",
+            "description": "Simulation with 4 territories arranged along a temperature gradient and agents of three genomes: cold-tolerant social, baseline grazer, and heat-tolerant migrant."
+        },
+        "predator_prey": {
+            "name": "Predator-prey",
+            "description": "Simulation with 4 territories, increased food availability for prey, and agents of three genomes: baseline grazer, cold-tolerant social agent, and predator."
+        },
+        "overcrowding": {
+            "name": "Overcrowding",
+            "description": "Simulation with 5 territories, one resource-rich central zone, and agents of three genomes: cold-tolerant social, heat-tolerant migrant, and baseline grazer."
+        },
+        "mutation_bottleneck": {
+            "name": "Mutation bottleneck",
+            "description": "Simulation with 4 territories, limited food availability, and agents of two genomes: agent with elevated variability and baseline grazer."
+        }
+    },
     "create": "Create",
     "save": "Save",
     "cancel": "Cancel",

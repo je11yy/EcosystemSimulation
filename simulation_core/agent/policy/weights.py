@@ -47,15 +47,15 @@ class MateScoreWeights:
 @dataclass(frozen=True)
 class HuntScoreWeights:
     # Голод - основной стимул к охоте.
-    hunger_pressure: float = 0.35
+    hunger_pressure: float = 0.3
     # PREDATION_DRIVE - основной генетический фактор склонности к охоте.
-    predation_drive: float = 0.25
+    predation_drive: float = 0.24
     # Агрессия слегка подталкивает конфликтных агентов к охоте.
-    aggression_drive: float = 0.1
+    aggression_drive: float = 0.08
     # Более сильные агенты охотнее идут на риск охоты.
-    attack_advantage: float = 0.2
+    attack_advantage: float = 0.18
     # Слабая цель привлекательнее и безопаснее.
-    target_weakness: float = 0.1
+    target_weakness: float = 0.08
 
 
 @dataclass(frozen=True)

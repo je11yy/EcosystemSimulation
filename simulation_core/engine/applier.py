@@ -1,3 +1,5 @@
+from typing import Optional
+
 from ..agent.actions import ActionOption
 from ..agent.registry import Agent
 from ..config import SimConfig
@@ -102,6 +104,7 @@ class ActionApplier:
         cost: ActionCost,
         agents,
         rng,
+        target_defense_multiplier: Optional[float] = None,
     ) -> AppliedActionResult:
         if action.target_id is None:
             return self.failed_result(agent, action, "no_target", cost)
@@ -113,7 +116,10 @@ class ActionApplier:
             return self.failed_result(agent, action, "target_on_another_territory", cost)
 
         attack_score = agent.state.effective_strength * rng.uniform(0.75, 1.25)
-        defense_score = target.state.effective_defense * rng.uniform(0.75, 1.25)
+        defense_multiplier = target_defense_multiplier or 1.0
+        defense_score = (
+            target.state.effective_defense * defense_multiplier * rng.uniform(0.75, 1.25)
+        )
         success = attack_score >= defense_score
 
         damage_to_target = 0.0
@@ -161,6 +167,23 @@ class ActionApplier:
             actor_died=not agent.state.is_alive,
             actor_death_reason="injury" if not agent.state.is_alive else "",
             target_death_reason="hunted" if not target.state.is_alive else "",
+        )
+
+    def apply_defense_reaction(self, target: Agent) -> AppliedActionResult:
+        cost = apply_action_cost(
+            target.state,
+            ActionCost(hunger=self.cfg.defend_hunger_cost),
+            self.cfg,
+        )
+        return AppliedActionResult(
+            agent_id=str(target.state.id),
+            action_type="defend_from_hunt",
+            success=True,
+            reason="reactive_defense",
+            hunger_cost=cost.hunger,
+            hp_loss=cost.hp,
+            actor_died=not target.state.is_alive,
+            actor_death_reason="exhaustion" if not target.state.is_alive else "",
         )
 
     def apply_successful_eat(

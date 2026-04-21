@@ -66,6 +66,8 @@ class EngineFactory:
                     id=gene.id,
                     name=gene.name,
                     effect_type=GeneEffectType(gene.effect_type),
+                    x=gene.x,
+                    y=gene.y,
                     threshold=gene.threshold,
                     weight=gene.weight,
                     default_active=gene.default_active,

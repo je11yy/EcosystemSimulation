@@ -5,25 +5,30 @@ from typing import Optional
 from .effect_type import GeneEffectType
 from .models import Gene, Genome
 
+MAX_GENERATED_GENE_NAME_LENGTH = 120
+
 
 @dataclass(frozen=True)
 class GenomeMutationConfig:
-    # Небольшие мутации параметров генов происходят чаще всего.
-    gene_parameter_rate: float = 0.08
-    threshold_sigma: float = 0.08
-    weight_sigma: float = 0.08
+    # Параметрические мутации оставляем редкими: геномы должны меняться
+    # медленно, а не перетасовываться почти в каждом поколении.
+    gene_parameter_rate: float = 0.03
+    threshold_sigma: float = 0.05
+    weight_sigma: float = 0.05
 
     # Переключение default_active меняет режим включения гена, поэтому редкое.
-    default_active_flip_rate: float = 0.01
+    default_active_flip_rate: float = 0.003
 
-    # Структурные мутации графа редкие, но именно они дают новые формы генома.
-    gene_duplication_rate: float = 0.01
-    gene_deletion_rate: float = 0.005
-    new_gene_rate: float = 0.005
-    edge_addition_rate: float = 0.02
-    edge_deletion_rate: float = 0.015
-    edge_weight_rate: float = 0.08
-    edge_weight_sigma: float = 0.08
+    # Структурные мутации делаем очень редкими.
+    # Удаление генов отключаем: в текущей модели полезнее накапливать
+    # структуру генома, чем терять ее целиком по случайности.
+    gene_duplication_rate: float = 0.003
+    gene_deletion_rate: float = 0.0
+    new_gene_rate: float = 0.001
+    edge_addition_rate: float = 0.008
+    edge_deletion_rate: float = 0.002
+    edge_weight_rate: float = 0.03
+    edge_weight_sigma: float = 0.05
 
     min_threshold: float = 0.0
     max_threshold: float = 100.0
@@ -104,6 +109,8 @@ class GenomeMutator:
                 id=gene.id,
                 name=gene.name,
                 effect_type=gene.effect_type,
+                x=gene.x,
+                y=gene.y,
                 threshold=_clamp(
                     gene.threshold + rng.gauss(0.0, self.config.threshold_sigma),
                     self.config.min_threshold,
@@ -131,6 +138,8 @@ class GenomeMutator:
                 id=gene.id,
                 name=gene.name,
                 effect_type=gene.effect_type,
+                x=gene.x,
+                y=gene.y,
                 threshold=gene.threshold,
                 weight=gene.weight,
                 default_active=not gene.default_active,
@@ -169,8 +178,10 @@ class GenomeMutator:
 
             duplicated_gene = Gene(
                 id=_next_gene_id(genome),
-                name=f"{gene.name} copy",
+                name=_truncate_gene_name(f"{gene.name} copy"),
                 effect_type=gene.effect_type,
+                x=gene.x + rng.uniform(-36.0, 36.0),
+                y=gene.y + rng.uniform(-36.0, 36.0),
                 threshold=gene.threshold,
                 weight=gene.weight,
                 default_active=gene.default_active,
@@ -189,8 +200,10 @@ class GenomeMutator:
         genome.add_gene(
             Gene(
                 id=_next_gene_id(genome),
-                name=f"Mutated {effect_type.value}",
+                name=_truncate_gene_name(f"Mutated {effect_type.value}"),
                 effect_type=effect_type,
+                x=rng.uniform(80.0, 720.0),
+                y=rng.uniform(80.0, 520.0),
                 threshold=rng.uniform(self.config.min_threshold, self.config.max_threshold),
                 weight=rng.uniform(0.7, 1.3),
                 default_active=rng.random() < 0.25,
@@ -259,6 +272,8 @@ def _clone_genome(genome: Genome) -> Genome:
                 id=gene.id,
                 name=gene.name,
                 effect_type=gene.effect_type,
+                x=gene.x,
+                y=gene.y,
                 threshold=gene.threshold,
                 weight=gene.weight,
                 default_active=gene.default_active,
@@ -282,6 +297,12 @@ def _next_gene_id(genome: Genome) -> int:
     if not genome.genes:
         return 1
     return max(genome.genes) + 1
+
+
+def _truncate_gene_name(name: str) -> str:
+    if len(name) <= MAX_GENERATED_GENE_NAME_LENGTH:
+        return name
+    return name[: MAX_GENERATED_GENE_NAME_LENGTH - 3].rstrip() + "..."
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:

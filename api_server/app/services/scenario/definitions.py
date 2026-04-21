@@ -60,10 +60,10 @@ class ScenarioDefinition:
 TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
     TemplateGenomeDefinition(
         key="balanced_grazer",
-        name="Шаблон: сбалансированный травоядный",
+        name="Базовый травоядный",
         description=(
-            "Базовый всеядный/травоядный агент для контрольных прогонов: умеренная "
-            "выживаемость, нормальное размножение и невысокая агрессия."
+            "Геном с умеренными параметрами выживания, защиты, пищевого поиска, "
+            "размножения и социальной устойчивости для контрольных симуляций."
         ),
         genes=(
             TemplateGeneDefinition("hp", "Умеренное здоровье", "MAX_HP", 0, 1.05, 120, 80),
@@ -83,10 +83,10 @@ TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
     ),
     TemplateGenomeDefinition(
         key="heat_migrant",
-        name="Шаблон: теплолюбивый мигрант",
+        name="Термоустойчивый мигрант",
         description=(
-            "Агент для жарких и нестабильных карт: хорошо переносит высокую температуру "
-            "и чаще уходит с неподходящих территорий."
+            "Геном с повышенной устойчивостью к высокой температуре и выраженной "
+            "склонностью к перемещению между территориями при ухудшении условий."
         ),
         genes=(
             TemplateGeneDefinition(
@@ -107,10 +107,10 @@ TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
     ),
     TemplateGenomeDefinition(
         key="cold_social",
-        name="Шаблон: холодоустойчивый стайный",
+        name="Холодоустойчивый социальный агент",
         description=(
-            "Хорошо держится в холодных областях и меньше страдает от плотности. "
-            "Полезен для проверки перенаселения и температурного отбора."
+            "Геном для холодных территорий с повышенной устойчивостью к низкой "
+            "температуре и высокой плотности популяции."
         ),
         genes=(
             TemplateGeneDefinition(
@@ -129,32 +129,32 @@ TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
     ),
     TemplateGenomeDefinition(
         key="predator",
-        name="Шаблон: хищник",
+        name="Хищник",
         description=(
-            "Сильный, более агрессивный агент с выгодой от успешной охоты. Нужен для "
-            "сценариев хищник-жертва и конфликтов за ресурсы."
+            "Геном с усиленными параметрами силы, охоты, агрессии и усвоения добычи "
+            "для сценариев ресурсного давления."
         ),
         genes=(
-            TemplateGeneDefinition("strength", "Сила охотника", "STRENGTH", 0, 1.55, 100, 80),
-            TemplateGeneDefinition("hp", "Крепкое тело", "MAX_HP", 0, 1.2, 260, 80),
+            TemplateGeneDefinition("strength", "Сила охотника", "STRENGTH", 0, 1.35, 100, 80),
+            TemplateGeneDefinition("hp", "Крепкое тело", "MAX_HP", 0, 1.1, 260, 80),
             TemplateGeneDefinition(
-                "predation", "Охотничий драйв", "PREDATION_DRIVE", 2.5, 1.6, 80, 230
+                "predation", "Охотничий драйв", "PREDATION_DRIVE", 3.5, 1.25, 80, 230
             ),
             TemplateGeneDefinition(
-                "digestion", "Хищное пищеварение", "CARNIVORE_DIGESTION", 2.5, 1.45, 260, 230
+                "digestion", "Хищное пищеварение", "CARNIVORE_DIGESTION", 3.0, 1.15, 260, 230
             ),
             TemplateGeneDefinition(
-                "aggression", "Ресурсная агрессия", "AGGRESSION_DRIVE", 4.0, 1.25, 420, 230
+                "aggression", "Ресурсная агрессия", "AGGRESSION_DRIVE", 4.5, 1.0, 420, 230
             ),
         ),
-        edges=(("strength", "predation", 1.2), ("digestion", "predation", 1.1)),
+        edges=(("strength", "predation", 1.08), ("digestion", "predation", 1.04)),
     ),
     TemplateGenomeDefinition(
         key="mutable_pioneer",
-        name="Шаблон: изменчивый пионер",
+        name="Агент с повышенной изменчивостью",
         description=(
-            "Быстро расселяется и чаще мутирует у потомства. Хорош для экспериментов "
-            "с бутылочным горлышком, адаптацией и разнообразием геномов."
+            "Геном с повышенной вероятностью мутаций, склонностью к расселению "
+            "и ускоренному воспроизводству в нестабильной среде."
         ),
         genes=(
             TemplateGeneDefinition(
@@ -179,10 +179,10 @@ TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
 SCENARIOS: tuple[ScenarioDefinition, ...] = (
     ScenarioDefinition(
         key="baseline_mosaic",
-        name="Сценарий: равновесная мозаика",
+        name="Базовый",
         description=(
-            "Контрольная карта с разной пищей и умеренными температурами. Помогает "
-            "сравнивать новые изменения движка с предсказуемой базовой динамикой."
+            "Симуляция с 4 территориями умеренного температурного диапазона и "
+            "агентами двух геномов: базового травоядного и хищника."
         ),
         territories=(
             TerritoryDefinition("meadow", 18, 24, 2.0, 20, 120, 120),
@@ -198,17 +198,19 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
             ("hill", "pond", 1.6),
         ),
         agent_groups=(
-            AgentGroupDefinition("balanced_grazer", "meadow", 5, temp_pref=20),
-            AgentGroupDefinition("balanced_grazer", "grove", 3, temp_pref=18),
-            AgentGroupDefinition("predator", "hill", 2, hunger=2.5, strength=1.2),
+            AgentGroupDefinition("balanced_grazer", "meadow", 6, temp_pref=20),
+            AgentGroupDefinition("balanced_grazer", "grove", 6, temp_pref=18),
+            AgentGroupDefinition("balanced_grazer", "pond", 4, temp_pref=21),
+            AgentGroupDefinition("predator", "hill", 4, hunger=2.8, strength=1.1),
         ),
     ),
     ScenarioDefinition(
         key="climate_gradient",
-        name="Сценарий: климатический градиент",
+        name="Климатический градиент",
         description=(
-            "Линейка холодных, умеренных и жарких территорий. Видно, какие геномы "
-            "закрепляются в подходящей температурной нише."
+            "Симуляция с 4 территориями, выстроенными по температурному градиенту, "
+            "и агентами трех геномов: холодоустойчивого социального, базового "
+            "травоядного и термоустойчивого мигранта."
         ),
         territories=(
             TerritoryDefinition("tundra", 10, 16, 1.4, 6, 80, 280),
@@ -230,10 +232,11 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
     ),
     ScenarioDefinition(
         key="predator_prey",
-        name="Сценарий: хищник и жертва",
+        name="Хищник-жертва",
         description=(
-            "Много травоядных, меньше хищников и карта с убежищами. Подходит для "
-            "анализа циклов охоты, смертности и восстановления популяции."
+            "Симуляция с 4 территориями, повышенной кормовой базой для жертв и "
+            "агентами трех геномов: базового травоядного, холодоустойчивого "
+            "социального агента и хищника."
         ),
         territories=(
             TerritoryDefinition("pasture", 30, 36, 2.8, 21, 140, 180),
@@ -256,10 +259,11 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
     ),
     ScenarioDefinition(
         key="overcrowding",
-        name="Сценарий: перенаселение",
+        name="Перенаселение",
         description=(
-            "Одна богатая центральная территория и бедные окраины. Сравнивает "
-            "социальную терпимость, расселение и конфликты при высокой плотности."
+            "Симуляция с 5 территориями, одной ресурсно насыщенной центральной зоной "
+            "и агентами трех геномов: холодоустойчивого социального, "
+            "термоустойчивого мигранта и базового травоядного."
         ),
         territories=(
             TerritoryDefinition("center", 34, 40, 2.4, 20, 370, 260),
@@ -282,10 +286,10 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
     ),
     ScenarioDefinition(
         key="mutation_bottleneck",
-        name="Сценарий: мутационное бутылочное горлышко",
+        name="Мутационное узкое место",
         description=(
-            "Мало еды, несколько островков и изменчивые пионеры. Нужен для наблюдения "
-            "за тем, помогает ли высокий MUTATION_RATE быстрее найти устойчивую стратегию."
+            "Симуляция с 4 территориями, ограниченной кормовой базой и агентами "
+            "двух геномов: агента с повышенной изменчивостью и базового травоядного."
         ),
         territories=(
             TerritoryDefinition("start", 10, 14, 1.0, 20, 100, 260),
@@ -306,3 +310,7 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
         ),
     ),
 )
+
+
+TEMPLATE_GENOMES_BY_KEY = {definition.key: definition for definition in TEMPLATE_GENOMES}
+TEMPLATE_GENOME_KEYS_BY_NAME = {definition.name: definition.key for definition in TEMPLATE_GENOMES}

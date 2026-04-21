@@ -5,11 +5,12 @@ from app.models import Agent, Gene, GeneEdge, Genome, SimulationLog
 from app.models.relations.agent_parent import AgentParentRelation
 from app.models.relations.genome_agent import GenomeAgentRelation
 from app.models.relations.genome_gene import GenomeGeneRelation
-from app.models.relations.genome_user import GenomeUserRelation
 from app.models.relations.simulation_agent import SimulationAgentRelation
 from app.models.relations.territory_agent import TerritoryAgentRelation
 from app.repositories.agent import AgentRepository
 from app.repositories.simulation import SimulationRepository
+
+MAX_GENE_NAME_LENGTH = 120
 
 
 class RuntimeSnapshotPersister:
@@ -148,18 +149,17 @@ class RuntimeSnapshotPersister:
         )
         self.session.add(genome)
         await self.session.flush()
-        self.session.add(GenomeUserRelation(user_id=user_id, genome_id=genome.id))
 
         gene_id_map = {}
         for index, gene_payload in enumerate(genome_payload.get("genes", []), start=1):
             gene = Gene(
-                name=gene_payload.get("name") or f"Gene {index}",
+                name=_normalize_gene_name(gene_payload.get("name"), fallback=f"Gene {index}"),
                 effect_type=gene_payload["effect_type"],
                 threshold=gene_payload["threshold"],
                 weight=gene_payload["weight"],
                 default_active=gene_payload["default_active"],
-                x=100 + index * 32,
-                y=100 + index * 24,
+                x=gene_payload.get("x", 100 + index * 32),
+                y=gene_payload.get("y", 100 + index * 24),
             )
             self.session.add(gene)
             await self.session.flush()
@@ -247,3 +247,10 @@ class RuntimeSnapshotPersister:
                 ")"
             )
         )
+
+
+def _normalize_gene_name(name: str | None, fallback: str) -> str:
+    value = (name or fallback).strip()
+    if len(value) <= MAX_GENE_NAME_LENGTH:
+        return value
+    return value[: MAX_GENE_NAME_LENGTH - 3].rstrip() + "..."

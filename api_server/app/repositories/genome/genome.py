@@ -2,8 +2,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.models import Gene, GeneEdge, Genome
+from app.models.relations.genome_agent import GenomeAgentRelation
 from app.models.relations.genome_gene import GenomeGeneRelation
 from app.models.relations.genome_user import GenomeUserRelation
+from app.models.relations.simulation_agent import SimulationAgentRelation
+from app.models.relations.simulation_user import SimulationUserRelation
 from app.repositories.base import Repository
 
 
@@ -79,9 +82,20 @@ class GenomeRepository(Repository):
         stmt = (
             select(Genome)
             .outerjoin(GenomeUserRelation, GenomeUserRelation.genome_id == Genome.id)
+            .outerjoin(GenomeAgentRelation, GenomeAgentRelation.genome_id == Genome.id)
+            .outerjoin(
+                SimulationAgentRelation,
+                SimulationAgentRelation.agent_id == GenomeAgentRelation.agent_id,
+            )
+            .outerjoin(
+                SimulationUserRelation,
+                SimulationUserRelation.simulation_id == SimulationAgentRelation.simulation_id,
+            )
             .where(
                 Genome.id == genome_id,
-                (Genome.is_template.is_(True)) | (GenomeUserRelation.user_id == user_id),
+                (Genome.is_template.is_(True))
+                | (GenomeUserRelation.user_id == user_id)
+                | (SimulationUserRelation.user_id == user_id),
             )
             .options(
                 selectinload(Genome.user_links),

@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { getScenarioPresets, getSimulations } from "src/api/simulations";
 import { useTranslation } from "react-i18next";
 import { useSimulationsListMutations } from "src/hooks/simulations/useSimulationMutations";
+import { getScenarioLabel } from "src/i18n/meta";
 
 export function SimulationsPage() {
     const { t } = useTranslation();
@@ -37,23 +38,18 @@ export function SimulationsPage() {
                 {scenariosQuery.data && (
                     <div className="scenario-presets__grid">
                         {scenariosQuery.data.map((scenario) => (
-                            <article className="scenario-card" key={scenario.key}>
-                                <h3>{scenario.name}</h3>
-                                <p>{scenario.description}</p>
-                                <button
-                                    type="button"
-                                    disabled={createFromScenarioMutation.isPending}
-                                    onClick={() => {
-                                        createFromScenarioMutation.mutate(scenario.key, {
-                                            onSuccess: (response) => {
-                                                navigate(`/simulations/${response.simulation_id}`);
-                                            },
-                                        });
-                                    }}
-                                >
-                                    {t("create_from_scenario")}
-                                </button>
-                            </article>
+                            <ScenarioCard
+                                key={scenario.key}
+                                scenario={scenario}
+                                isPending={createFromScenarioMutation.isPending}
+                                onCreate={() => {
+                                    createFromScenarioMutation.mutate(scenario.key, {
+                                        onSuccess: (response) => {
+                                            navigate(`/simulations/${response.simulation_id}`);
+                                        },
+                                    });
+                                }}
+                            />
                         ))}
                     </div>
                 )}
@@ -74,3 +70,26 @@ export function SimulationsPage() {
         </div>
     )
 };
+
+function ScenarioCard({
+    scenario,
+    isPending,
+    onCreate,
+}: {
+    scenario: Awaited<ReturnType<typeof getScenarioPresets>>[number];
+    isPending: boolean;
+    onCreate: () => void;
+}) {
+    const { t } = useTranslation();
+    const label = getScenarioLabel(scenario, t);
+
+    return (
+        <article className="scenario-card">
+            <h3>{label.name}</h3>
+            <p>{label.description}</p>
+            <button type="button" disabled={isPending} onClick={onCreate}>
+                {t("create_from_scenario")}
+            </button>
+        </article>
+    );
+}

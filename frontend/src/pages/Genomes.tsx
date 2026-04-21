@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { getGenomes } from "src/api/genomes";
 import { useTranslation } from "react-i18next";
 import { useGenomesListMutations } from "src/hooks/genomes/useGenomeMutations";
+import { getTemplateGenomeLabel } from "src/i18n/meta";
 
 export function GenomesPage() {
     const { t } = useTranslation();
@@ -29,18 +30,36 @@ export function GenomesPage() {
             {genomesQuery.data && (
                 <ul>
                     {genomesQuery.data.map(genome => (
-                        <li key={genome.id}>
-                            <Link to={`/genomes/${genome.id}`}>
-                                {genome.name}
-                            </Link>
-                            {genome.is_template && (
-                                <span className="template-badge">{t("template")}</span>
-                            )}
-                            {genome.description && <p className="form-hint">{genome.description}</p>}
-                        </li>
+                        <GenomeListItem key={genome.id} genome={genome} />
                     ))}
                 </ul>
             )}
         </div>
     )
 };
+
+function GenomeListItem({
+    genome,
+}: {
+    genome: Awaited<ReturnType<typeof getGenomes>>[number];
+}) {
+    const { t } = useTranslation();
+    const label = getTemplateGenomeLabel(
+        genome.template_key,
+        genome.name,
+        genome.description,
+        t,
+    );
+
+    return (
+        <li>
+            <Link to={`/genomes/${genome.id}`}>
+                {label.name}
+            </Link>
+            {genome.is_template && (
+                <span className="template-badge">{t("template")}</span>
+            )}
+            {label.description && <p className="form-hint">{label.description}</p>}
+        </li>
+    );
+}

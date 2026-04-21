@@ -80,6 +80,8 @@ def _gene_payload(gene) -> dict[str, Any]:
         "id": data["id"],
         "name": data["name"],
         "effect_type": data["effect_type"],
+        "x": data["position"]["x"],
+        "y": data["position"]["y"],
         "threshold": data["threshold"],
         "weight": data["weight"],
         "default_active": data["default_active"],

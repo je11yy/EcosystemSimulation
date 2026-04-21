@@ -31,7 +31,12 @@ class GenomeService:
         await self.session.commit()
         genomes = await self.genomes.available_for_user(user_id)
         return [
-            {"id": genome.id, "name": genome.name, "is_template": genome.is_template}
+            {
+                "id": genome.id,
+                "name": genome.name,
+                "is_template": genome.is_template,
+                "template_key": genome_list_item_to_dict(genome).get("template_key"),
+            }
             for genome in genomes
         ]
 
@@ -55,7 +60,7 @@ class GenomeService:
         await self._mark_related_simulations_stale(genome_id, user_id)
 
         gene = Gene(
-            name=payload.name,
+            name=(payload.name or payload.effect_type.value),
             effect_type=payload.effect_type.value,
             threshold=payload.threshold,
             weight=payload.weight,
@@ -77,7 +82,7 @@ class GenomeService:
     ) -> None:
         gene = await self._get_owned_gene(genome_id, gene_id, user_id)
         await self._mark_related_simulations_stale(genome_id, user_id)
-        gene.name = payload.name
+        gene.name = payload.name or payload.effect_type.value
         gene.effect_type = payload.effect_type.value
         gene.threshold = payload.threshold
         gene.weight = payload.weight
