@@ -47,6 +47,10 @@ class SimulationDetails(SimulationRead):
     last_step: Optional[dict] = None
 
 
+class SimulationBatchRunRequest(BaseModel):
+    steps: int = Field(ge=1, le=150)
+
+
 class SimulationLogListItem(BaseModel):
     id: int
     simulation_id: int

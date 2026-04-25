@@ -4,7 +4,6 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class TemplateGeneDefinition:
     key: str
-    name: str
     effect_type: str
     threshold: float
     weight: float
@@ -57,6 +56,16 @@ class ScenarioDefinition:
     agent_groups: tuple[AgentGroupDefinition, ...]
 
 
+def _bidirectional_edges(
+    *edges: tuple[str, str, float],
+) -> tuple[tuple[str, str, float], ...]:
+    result: list[tuple[str, str, float]] = []
+    for source, target, weight in edges:
+        result.append((source, target, weight))
+        result.append((target, source, weight))
+    return tuple(result)
+
+
 TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
     TemplateGenomeDefinition(
         key="balanced_grazer",
@@ -66,18 +75,12 @@ TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
             "размножения и социальной устойчивости для контрольных симуляций."
         ),
         genes=(
-            TemplateGeneDefinition("hp", "Умеренное здоровье", "MAX_HP", 0, 1.05, 120, 80),
-            TemplateGeneDefinition("defense", "Осторожная защита", "DEFENSE", 0, 1.1, 260, 80),
-            TemplateGeneDefinition("hunger", "Пищевой драйв", "HUNGER_DRIVE", 3.0, 1.15, 80, 210),
-            TemplateGeneDefinition(
-                "repro", "Умеренное размножение", "REPRODUCTION_DRIVE", 3.0, 1.0, 230, 220
-            ),
-            TemplateGeneDefinition(
-                "site", "Привязанность к месту", "SITE_FIDELITY", 3.0, 1.05, 370, 210
-            ),
-            TemplateGeneDefinition(
-                "social", "Нормальная социальность", "SOCIAL_TOLERANCE", 4.0, 0.8, 260, 340
-            ),
+            TemplateGeneDefinition("hp", "MAX_HP", 0, 1.05, 120, 80),
+            TemplateGeneDefinition("defense", "DEFENSE", 0, 1.1, 260, 80),
+            TemplateGeneDefinition("hunger", "HUNGER_DRIVE", 3.0, 1.15, 80, 210),
+            TemplateGeneDefinition("repro", "REPRODUCTION_DRIVE", 3.0, 1.0, 230, 220),
+            TemplateGeneDefinition("site", "SITE_FIDELITY", 3.0, 1.05, 370, 210),
+            TemplateGeneDefinition("social", "SOCIAL_TOLERANCE", 4.0, 0.8, 260, 340),
         ),
         edges=(("defense", "site", 1.08), ("hunger", "repro", 0.92)),
     ),
@@ -89,19 +92,11 @@ TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
             "склонностью к перемещению между территориями при ухудшении условий."
         ),
         genes=(
-            TemplateGeneDefinition(
-                "heat", "Теплоустойчивость", "HEAT_RESISTANCE", 26.0, 1.4, 100, 90
-            ),
-            TemplateGeneDefinition(
-                "dispersal", "Поиск новых мест", "DISPERSAL_DRIVE", 2.5, 1.35, 260, 90
-            ),
-            TemplateGeneDefinition(
-                "hunger", "Быстрый поиск пищи", "HUNGER_DRIVE", 2.5, 1.2, 80, 240
-            ),
-            TemplateGeneDefinition(
-                "repro", "Размножение при комфорте", "REPRODUCTION_DRIVE", 3.2, 0.95, 260, 240
-            ),
-            TemplateGeneDefinition("metabolism", "Экономный обмен", "METABOLISM", 0, 0.9, 420, 160),
+            TemplateGeneDefinition("heat", "HEAT_RESISTANCE", 26.0, 1.4, 100, 90),
+            TemplateGeneDefinition("dispersal", "DISPERSAL_DRIVE", 2.5, 1.35, 260, 90),
+            TemplateGeneDefinition("hunger", "HUNGER_DRIVE", 2.5, 1.2, 80, 240),
+            TemplateGeneDefinition("repro", "REPRODUCTION_DRIVE", 3.2, 0.95, 260, 240),
+            TemplateGeneDefinition("metabolism", "METABOLISM", 0, 0.9, 420, 160),
         ),
         edges=(("heat", "dispersal", 1.15), ("metabolism", "hunger", 0.9)),
     ),
@@ -113,17 +108,11 @@ TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
             "температуре и высокой плотности популяции."
         ),
         genes=(
-            TemplateGeneDefinition(
-                "cold", "Холодоустойчивость", "COLD_RESISTANCE", 12.0, 1.45, 100, 90
-            ),
-            TemplateGeneDefinition(
-                "social", "Стайная терпимость", "SOCIAL_TOLERANCE", 3.0, 1.5, 260, 90
-            ),
-            TemplateGeneDefinition("defense", "Групповая защита", "DEFENSE", 0, 1.15, 420, 90),
-            TemplateGeneDefinition("site", "Оседлость", "SITE_FIDELITY", 3.0, 1.25, 180, 250),
-            TemplateGeneDefinition(
-                "repro", "Стабильное размножение", "REPRODUCTION_DRIVE", 3.3, 0.95, 350, 250
-            ),
+            TemplateGeneDefinition("cold", "COLD_RESISTANCE", 12.0, 1.45, 100, 90),
+            TemplateGeneDefinition("social", "SOCIAL_TOLERANCE", 3.0, 1.5, 260, 90),
+            TemplateGeneDefinition("defense", "DEFENSE", 0, 1.15, 420, 90),
+            TemplateGeneDefinition("site", "SITE_FIDELITY", 3.0, 1.25, 180, 250),
+            TemplateGeneDefinition("repro", "REPRODUCTION_DRIVE", 3.3, 0.95, 350, 250),
         ),
         edges=(("social", "site", 1.18), ("cold", "defense", 1.08)),
     ),
@@ -135,17 +124,11 @@ TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
             "для сценариев ресурсного давления."
         ),
         genes=(
-            TemplateGeneDefinition("strength", "Сила охотника", "STRENGTH", 0, 1.35, 100, 80),
-            TemplateGeneDefinition("hp", "Крепкое тело", "MAX_HP", 0, 1.1, 260, 80),
-            TemplateGeneDefinition(
-                "predation", "Охотничий драйв", "PREDATION_DRIVE", 3.5, 1.25, 80, 230
-            ),
-            TemplateGeneDefinition(
-                "digestion", "Хищное пищеварение", "CARNIVORE_DIGESTION", 3.0, 1.15, 260, 230
-            ),
-            TemplateGeneDefinition(
-                "aggression", "Ресурсная агрессия", "AGGRESSION_DRIVE", 4.5, 1.0, 420, 230
-            ),
+            TemplateGeneDefinition("strength", "STRENGTH", 0, 1.35, 100, 80),
+            TemplateGeneDefinition("hp", "MAX_HP", 0, 1.1, 260, 80),
+            TemplateGeneDefinition("predation", "PREDATION_DRIVE", 3.5, 1.25, 80, 230),
+            TemplateGeneDefinition("digestion", "CARNIVORE_DIGESTION", 3.0, 1.15, 260, 230),
+            TemplateGeneDefinition("aggression", "AGGRESSION_DRIVE", 4.5, 1.0, 420, 230),
         ),
         edges=(("strength", "predation", 1.08), ("digestion", "predation", 1.04)),
     ),
@@ -157,19 +140,11 @@ TEMPLATE_GENOMES: tuple[TemplateGenomeDefinition, ...] = (
             "и ускоренному воспроизводству в нестабильной среде."
         ),
         genes=(
-            TemplateGeneDefinition(
-                "mutation", "Высокая изменчивость", "MUTATION_RATE", 0, 2.2, 100, 80
-            ),
-            TemplateGeneDefinition(
-                "dispersal", "Пионерское расселение", "DISPERSAL_DRIVE", 2.8, 1.45, 260, 80
-            ),
-            TemplateGeneDefinition(
-                "repro", "Быстрое размножение", "REPRODUCTION_DRIVE", 2.8, 1.35, 100, 240
-            ),
-            TemplateGeneDefinition(
-                "hunger", "Рискованный поиск пищи", "HUNGER_DRIVE", 3.0, 1.25, 260, 240
-            ),
-            TemplateGeneDefinition("defense", "Хрупкая защита", "DEFENSE", 0, 0.85, 420, 160),
+            TemplateGeneDefinition("mutation", "MUTATION_RATE", 0, 2.2, 100, 80),
+            TemplateGeneDefinition("dispersal", "DISPERSAL_DRIVE", 2.8, 1.45, 260, 80),
+            TemplateGeneDefinition("repro", "REPRODUCTION_DRIVE", 2.8, 1.35, 100, 240),
+            TemplateGeneDefinition("hunger", "HUNGER_DRIVE", 3.0, 1.25, 260, 240),
+            TemplateGeneDefinition("defense", "DEFENSE", 0, 0.85, 420, 160),
         ),
         edges=(("mutation", "repro", 1.12), ("dispersal", "hunger", 1.08)),
     ),
@@ -192,10 +167,15 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
         ),
         edges=(
             ("meadow", "grove", 1.0),
+            ("grove", "meadow", 1.0),
             ("grove", "hill", 1.4),
+            ("hill", "grove", 1.4),
             ("meadow", "hill", 1.2),
+            ("hill", "meadow", 1.2),
             ("grove", "pond", 0.9),
+            ("pond", "grove", 1.3),
             ("hill", "pond", 1.6),
+            ("pond", "hill", 1.1),
         ),
         agent_groups=(
             AgentGroupDefinition("balanced_grazer", "meadow", 6, temp_pref=20),
@@ -218,7 +198,7 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
             TerritoryDefinition("savanna", 16, 22, 1.8, 29, 520, 280),
             TerritoryDefinition("desert", 6, 10, 0.8, 36, 740, 280),
         ),
-        edges=(
+        edges=_bidirectional_edges(
             ("tundra", "forest", 1.0),
             ("forest", "savanna", 1.0),
             ("savanna", "desert", 1.2),
@@ -244,7 +224,7 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
             TerritoryDefinition("den", 8, 12, 0.8, 16, 420, 390),
             TerritoryDefinition("river", 24, 30, 2.3, 22, 690, 250),
         ),
-        edges=(
+        edges=_bidirectional_edges(
             ("pasture", "shelter", 0.8),
             ("shelter", "den", 1.2),
             ("pasture", "den", 1.5),
@@ -272,7 +252,7 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
             TerritoryDefinition("south", 8, 12, 1.0, 28, 370, 460),
             TerritoryDefinition("west", 8, 12, 1.0, 11, 90, 260),
         ),
-        edges=(
+        edges=_bidirectional_edges(
             ("center", "north", 1.0),
             ("center", "east", 1.0),
             ("center", "south", 1.0),
@@ -299,10 +279,15 @@ SCENARIOS: tuple[ScenarioDefinition, ...] = (
         ),
         edges=(
             ("start", "cold_island", 1.4),
+            ("cold_island", "start", 1.4),
             ("start", "hot_island", 1.4),
+            ("hot_island", "start", 1.4),
             ("cold_island", "oasis", 1.6),
+            ("oasis", "cold_island", 1.2),
             ("hot_island", "oasis", 1.6),
+            ("oasis", "hot_island", 1.9),
             ("start", "oasis", 2.2),
+            ("oasis", "start", 2.2),
         ),
         agent_groups=(
             AgentGroupDefinition("mutable_pioneer", "start", 6, hunger=2.0, temp_pref=21),

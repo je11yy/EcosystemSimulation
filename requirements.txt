@@ -5,7 +5,7 @@ cfgv==3.4.0
 distlib==0.4.0
 exceptiongroup==1.3.1
 fastapi==0.128.8
-filelock==3.19.1
+filelock==3.24.2
 identify==2.6.15
 idna==3.11
 nodeenv==1.10.0

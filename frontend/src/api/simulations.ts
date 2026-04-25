@@ -4,8 +4,8 @@ import type {
     ScenarioCreateResponse,
     ScenarioPreset,
     Simulation,
+    SimulationBatchRunRequest,
     SimulationDetails,
-    Log,
 } from "./types";
 
 export function getSimulations(): Promise<Simulation[]> {
@@ -14,10 +14,6 @@ export function getSimulations(): Promise<Simulation[]> {
 
 export function getSimulation(simulationId: number): Promise<SimulationDetails> {
     return apiFetch<SimulationDetails>(`/simulations/${simulationId}`);
-};
-
-export function getSimulationLogs(simulationId: number): Promise<Log[]> {
-    return apiFetch<Log[]>(`/simulations/${simulationId}/logs`);
 };
 
 export function createSimulation(name: string): Promise<Response> {
@@ -52,38 +48,12 @@ export function updateSimulationName(simulationId: number, name: string): Promis
 	});
 }
 
-export function startSimulation(simulationId: number): Promise<Response> {
-	return apiFetch<Response>(`/simulations/${simulationId}/start`, {
-		method: "POST",
-	});
-}
-
-export function buildSimulation(simulationId: number): Promise<Response> {
-	return apiFetch<Response>(`/simulations/${simulationId}/build`, {
-		method: "POST",
-	});
-}
-
-export function stepSimulation(simulationId: number): Promise<Response> {
-	return apiFetch<Response>(`/simulations/${simulationId}/step`, {
-		method: "POST",
-	});
-}
-
-export function runSimulation(simulationId: number): Promise<Response> {
+export function runSimulation(
+    simulationId: number,
+    payload: SimulationBatchRunRequest,
+): Promise<Response> {
 	return apiFetch<Response>(`/simulations/${simulationId}/run`, {
 		method: "POST",
-	});
-}
-
-export function pauseSimulation(simulationId: number): Promise<Response> {
-	return apiFetch<Response>(`/simulations/${simulationId}/pause`, {
-		method: "POST",
-	});
-}
-
-export function stopSimulation(simulationId: number): Promise<Response> {
-	return apiFetch<Response>(`/simulations/${simulationId}/stop`, {
-		method: "POST",
+		body: JSON.stringify(payload),
 	});
 }

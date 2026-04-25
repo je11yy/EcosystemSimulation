@@ -10,40 +10,23 @@ class SimulationRuntimeClient:
     def __init__(self, base_url: str | None = None):
         self.base_url = (base_url or settings.simulation_service_base_url).rstrip("/")
 
-    async def build(self, payload: dict[str, Any]) -> dict[str, Any]:
-        return await self._post("/runtime/build", payload)
+    async def run_batch(self, payload: dict[str, Any], steps: int) -> dict[str, Any]:
+        return await self._post(
+            "/runtime/run-batch",
+            {
+                "build": payload,
+                "steps": steps,
+            },
+            timeout=120.0,
+        )
 
-    async def step(self, simulation_id: int) -> dict[str, Any]:
-        return await self._post(f"/runtime/{simulation_id}/step", {})
-
-    async def start(
+    async def _post(
         self,
-        simulation_id: int,
-        interval_seconds: float | None = None,
-        max_steps: int | None = None,
+        path: str,
+        payload: dict[str, Any],
+        timeout: float = 30.0,
     ) -> dict[str, Any]:
-        payload = {
-            "interval_seconds": interval_seconds,
-            "max_steps": max_steps,
-        }
-        return await self._post(f"/runtime/{simulation_id}/start", payload)
-
-    async def pause(self, simulation_id: int) -> dict[str, Any]:
-        return await self._post(f"/runtime/{simulation_id}/pause", {})
-
-    async def drain(self, simulation_id: int) -> dict[str, Any]:
-        return await self._post(f"/runtime/{simulation_id}/drain", {})
-
-    async def stop(self, simulation_id: int) -> dict[str, Any]:
-        return await self._post(f"/runtime/{simulation_id}/stop", {})
-
-    async def state(self, simulation_id: int) -> dict[str, Any]:
-        async with httpx.AsyncClient(base_url=self.base_url, timeout=10.0) as client:
-            response = await client.get(f"/runtime/{simulation_id}/state")
-        return self._handle_response(response)
-
-    async def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-        async with httpx.AsyncClient(base_url=self.base_url, timeout=30.0) as client:
+        async with httpx.AsyncClient(base_url=self.base_url, timeout=timeout) as client:
             response = await client.post(path, json=payload)
         return self._handle_response(response)
 

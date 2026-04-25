@@ -59,6 +59,42 @@ export interface StepEvents {
     hunts: Array<Record<string, unknown>>;
 }
 
+export interface TickAgentSnapshot {
+    id: number;
+    sex: string;
+    territory_id: number;
+    hunger: number;
+    hp: number;
+    strength: number;
+    effective_strength: number;
+    defense: number;
+    effective_defense: number;
+    temp_pref: number;
+    satisfaction: number;
+    pregnant: boolean;
+    ticks_to_birth: number | null;
+    hunt_cooldown: number;
+    is_alive: boolean;
+    max_hp: number;
+}
+
+export interface TickTerritorySnapshot {
+    id: number;
+    food: number;
+    temperature: number;
+    food_regen_per_tick: number;
+    food_capacity: number;
+}
+
+export interface TickSnapshot {
+    simulation_id: number;
+    tick: number;
+    status: string;
+    agents: TickAgentSnapshot[];
+    territories: TickTerritorySnapshot[];
+    last_result?: Record<string, unknown> | null;
+}
+
 export interface AgentDecision {
     agent_id: number;
     action: "eat" | "move" | "mate" | "rest" | "hunt";
@@ -76,6 +112,7 @@ export interface Log {
     step_result: Step;
     metrics: TickMetrics;
     events: StepEvents;
+    snapshot?: TickSnapshot | null;
     created_at: string;
 }
 
@@ -99,6 +136,10 @@ export interface SimulationDetails extends Simulation {
     logs_count: number;
     last_step: Step | null;
 };
+
+export interface SimulationBatchRunRequest {
+    steps: number;
+}
 
 // agents
 
@@ -170,7 +211,6 @@ export type GeneEffectType =
     | "MUTATION_RATE";
 
 export interface GeneCreate {
-    name?: string;
     effect_type: GeneEffectType | string;
     weight: number;
     threshold: number;

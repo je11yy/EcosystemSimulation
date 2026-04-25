@@ -82,3 +82,27 @@ class SimulationRepository(Repository):
             edges = list((await self.session.scalars(edges_stmt)).all())
 
         return simulation, territories, edges
+
+    async def list_owned_territories(
+        self,
+        simulation_id: int,
+        user_id: int,
+    ) -> list[Territory]:
+        stmt = (
+            select(Territory)
+            .join(
+                SimulationTerritoryRelation,
+                SimulationTerritoryRelation.territory_id == Territory.id,
+            )
+            .join(
+                SimulationUserRelation,
+                SimulationUserRelation.simulation_id == SimulationTerritoryRelation.simulation_id,
+            )
+            .where(
+                SimulationTerritoryRelation.simulation_id == simulation_id,
+                SimulationUserRelation.user_id == user_id,
+            )
+            .options(selectinload(Territory.simulation_links))
+            .order_by(Territory.id)
+        )
+        return list((await self.session.scalars(stmt)).all())

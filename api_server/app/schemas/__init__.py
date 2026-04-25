@@ -12,8 +12,14 @@ from .simulation.log import (
     SimulationLogRead,
     StepResult,
     TickMetrics,
+    TickSnapshot,
 )
-from .simulation.read import SimulationDetails, SimulationLogListItem, SimulationRead
+from .simulation.read import (
+    SimulationBatchRunRequest,
+    SimulationDetails,
+    SimulationLogListItem,
+    SimulationRead,
+)
 from .territory.edge import TerritoryEdge
 from .territory.territory import (
     TerritoryCreate,
@@ -44,11 +50,13 @@ __all__ = [
     "SimulationRead",
     "SimulationCreate",
     "SimulationDetails",
+    "SimulationBatchRunRequest",
     "AgentDecision",
     "SimulationLogCreate",
     "SimulationLogListItem",
     "SimulationLogRead",
     "StepResult",
+    "TickSnapshot",
     "TickMetrics",
     # Territory
     "TerritoryCreate",

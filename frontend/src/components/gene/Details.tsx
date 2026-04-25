@@ -7,7 +7,6 @@ import { getGeneEffectLabel } from "src/i18n/meta";
 export function GeneDetails({ gene, onDelete }: { gene: Gene; onDelete?: () => void }) {
     const { t } = useTranslation();
     return <div>
-        <h3>{t('id')}: {gene.id}</h3>
         <p>{t('effectType')}: {getGeneEffectLabel(gene.effect_type, t)}</p>
         <p>{t('gene_weight')}: {gene.weight}</p>
         <p>{t('threshold')}: {gene.threshold}</p>

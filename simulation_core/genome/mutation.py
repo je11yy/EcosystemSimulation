@@ -5,8 +5,6 @@ from typing import Optional
 from .effect_type import GeneEffectType
 from .models import Gene, Genome
 
-MAX_GENERATED_GENE_NAME_LENGTH = 120
-
 
 @dataclass(frozen=True)
 class GenomeMutationConfig:
@@ -107,7 +105,6 @@ class GenomeMutator:
 
             genome.genes[gene_id] = Gene(
                 id=gene.id,
-                name=gene.name,
                 effect_type=gene.effect_type,
                 x=gene.x,
                 y=gene.y,
@@ -136,7 +133,6 @@ class GenomeMutator:
 
             genome.genes[gene_id] = Gene(
                 id=gene.id,
-                name=gene.name,
                 effect_type=gene.effect_type,
                 x=gene.x,
                 y=gene.y,
@@ -171,36 +167,26 @@ class GenomeMutator:
         return deleted
 
     def _duplicate_genes(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
-        duplicated = 0
-        for gene in list(genome.genes.values()):
-            if not _roll(rng, self.config.gene_duplication_rate, rate_multiplier):
-                continue
-
-            duplicated_gene = Gene(
-                id=_next_gene_id(genome),
-                name=_truncate_gene_name(f"{gene.name} copy"),
-                effect_type=gene.effect_type,
-                x=gene.x + rng.uniform(-36.0, 36.0),
-                y=gene.y + rng.uniform(-36.0, 36.0),
-                threshold=gene.threshold,
-                weight=gene.weight,
-                default_active=gene.default_active,
-                is_active=False,
-            )
-            genome.add_gene(duplicated_gene)
-            duplicated += 1
-
-        return duplicated
+        # При уникальности effect_type внутри одного генома классическое
+        # дублирование гена отключаем: оно сразу создало бы конфликт.
+        return 0
 
     def _add_new_gene(self, genome: Genome, rng: Random, rate_multiplier: float) -> int:
         if not _roll(rng, self.config.new_gene_rate, rate_multiplier):
             return 0
 
-        effect_type = rng.choice(list(GeneEffectType))
+        available_effect_types = [
+            effect_type
+            for effect_type in GeneEffectType
+            if all(gene.effect_type != effect_type for gene in genome.genes.values())
+        ]
+        if not available_effect_types:
+            return 0
+
+        effect_type = rng.choice(available_effect_types)
         genome.add_gene(
             Gene(
                 id=_next_gene_id(genome),
-                name=_truncate_gene_name(f"Mutated {effect_type.value}"),
                 effect_type=effect_type,
                 x=rng.uniform(80.0, 720.0),
                 y=rng.uniform(80.0, 520.0),
@@ -270,7 +256,6 @@ def _clone_genome(genome: Genome) -> Genome:
         cloned.add_gene(
             Gene(
                 id=gene.id,
-                name=gene.name,
                 effect_type=gene.effect_type,
                 x=gene.x,
                 y=gene.y,
@@ -297,12 +282,6 @@ def _next_gene_id(genome: Genome) -> int:
     if not genome.genes:
         return 1
     return max(genome.genes) + 1
-
-
-def _truncate_gene_name(name: str) -> str:
-    if len(name) <= MAX_GENERATED_GENE_NAME_LENGTH:
-        return name
-    return name[: MAX_GENERATED_GENE_NAME_LENGTH - 3].rstrip() + "..."
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:

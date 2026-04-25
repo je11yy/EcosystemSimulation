@@ -6,7 +6,6 @@ from ..base import Node, Position
 
 
 class GeneCreate(BaseModel):
-    name: str = ""
     effect_type: GeneEffectType
     threshold: float = Field(
         default=0.0,
@@ -22,7 +21,6 @@ class GeneCreate(BaseModel):
 
 
 class Gene(Node):
-    name: str
     effect_type: GeneEffectType
     weight: float
     threshold: float

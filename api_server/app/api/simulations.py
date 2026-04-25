@@ -4,9 +4,9 @@ from pydantic import BaseModel
 from app.api.deps import CurrentUser, DbSession
 from app.schemas import (
     Response,
+    SimulationBatchRunRequest,
     SimulationCreate,
     SimulationDetails,
-    SimulationLogRead,
     SimulationRead,
 )
 from app.services.scenario import ScenarioService
@@ -72,15 +72,6 @@ async def get_simulation(
     return await SimulationService(db).get_details(current_user.id, simulation_id)
 
 
-@router.get("/{simulation_id}/logs", response_model=list[SimulationLogRead])
-async def get_simulation_logs(
-    simulation_id: int,
-    current_user: CurrentUser,
-    db: DbSession,
-) -> list[dict]:
-    return await SimulationService(db).get_logs(current_user.id, simulation_id)
-
-
 @router.delete("/{simulation_id}", response_model=Response)
 async def delete_simulation(
     simulation_id: int,
@@ -102,61 +93,12 @@ async def update_simulation_name(
     return Response(success=True, message="Simulation renamed")
 
 
-@router.post("/{simulation_id}/start", response_model=Response)
-async def start_simulation(
-    simulation_id: int,
-    current_user: CurrentUser,
-    db: DbSession,
-) -> Response:
-    await SimulationService(db).start(current_user.id, simulation_id)
-    return Response(success=True, message="Simulation started")
-
-
-@router.post("/{simulation_id}/build", response_model=Response)
-async def build_simulation(
-    simulation_id: int,
-    current_user: CurrentUser,
-    db: DbSession,
-) -> Response:
-    await SimulationService(db).build_runtime(current_user.id, simulation_id)
-    return Response(success=True, message="Simulation built")
-
-
 @router.post("/{simulation_id}/run", response_model=Response)
 async def run_simulation(
     simulation_id: int,
+    payload: SimulationBatchRunRequest,
     current_user: CurrentUser,
     db: DbSession,
 ) -> Response:
-    await SimulationService(db).start(current_user.id, simulation_id)
-    return Response(success=True, message="Simulation running")
-
-
-@router.post("/{simulation_id}/pause", response_model=Response)
-async def pause_simulation(
-    simulation_id: int,
-    current_user: CurrentUser,
-    db: DbSession,
-) -> Response:
-    await SimulationService(db).pause(current_user.id, simulation_id)
-    return Response(success=True, message="Simulation paused")
-
-
-@router.post("/{simulation_id}/stop", response_model=Response)
-async def stop_simulation(
-    simulation_id: int,
-    current_user: CurrentUser,
-    db: DbSession,
-) -> Response:
-    await SimulationService(db).stop(current_user.id, simulation_id)
-    return Response(success=True, message="Simulation stopped")
-
-
-@router.post("/{simulation_id}/step", response_model=Response)
-async def step_simulation(
-    simulation_id: int,
-    current_user: CurrentUser,
-    db: DbSession,
-) -> Response:
-    await SimulationService(db).step(current_user.id, simulation_id)
-    return Response(success=True, message="Simulation stepped")
+    await SimulationService(db).run_batch(current_user.id, simulation_id, payload)
+    return Response(success=True, message="Simulation finished")

@@ -16,7 +16,7 @@ export function Modal({ title, onClose, children }: ModalProps) {
                 <div className="modal-header">
                     <h2>{title}</h2>
                     <button className="icon-button" type="button" onClick={onClose} aria-label={t("close")}>
-                        X
+                        &times;
                     </button>
                 </div>
                 <div className="modal-body">

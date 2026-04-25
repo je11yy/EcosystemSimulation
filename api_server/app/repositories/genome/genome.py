@@ -27,6 +27,7 @@ class GenomeRepository(Repository):
             .outerjoin(GenomeUserRelation, GenomeUserRelation.genome_id == Genome.id)
             .where((Genome.is_template.is_(True)) | (GenomeUserRelation.user_id == user_id))
             .order_by(Genome.name)
+            .options(selectinload(Genome.user_links))
         )
         return list((await self.session.scalars(stmt)).unique().all())
 

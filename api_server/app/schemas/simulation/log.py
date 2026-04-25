@@ -45,6 +45,15 @@ class StepEvents(BaseModel):
     hunts: List[Dict[str, Any]] = Field(default_factory=list)
 
 
+class TickSnapshot(BaseModel):
+    simulation_id: int
+    tick: int
+    status: str
+    agents: List[Dict[str, Any]] = Field(default_factory=list)
+    territories: List[Dict[str, Any]] = Field(default_factory=list)
+    last_result: Optional[Dict[str, Any]] = None
+
+
 class SimulationLogCreate(BaseModel):
     simulation_id: int
     tick: int
@@ -52,6 +61,7 @@ class SimulationLogCreate(BaseModel):
     step_result: StepResult = Field(default_factory=StepResult)
     metrics: TickMetrics = Field(default_factory=TickMetrics)
     events: StepEvents = Field(default_factory=StepEvents)
+    snapshot: Optional[TickSnapshot] = None
 
 
 class SimulationLogRead(SimulationLogCreate):

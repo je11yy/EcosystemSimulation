@@ -55,6 +55,14 @@ export function GenomePage() {
     );
     const graphGenes = useMemo(() => autoLayoutGenes(genes), [genes]);
     const geneById = new Map(genes.map(gene => [gene.id, gene]));
+    const usedEffectTypes = useMemo(
+        () => new Set(genes.map((gene) => gene.effect_type)),
+        [genes],
+    );
+    const createEffectOptions = useMemo(
+        () => GENE_EFFECT_TYPES.filter((effectType) => !usedEffectTypes.has(effectType.name)),
+        [usedEffectTypes],
+    );
     const selectedNodeId = edgeSourceId ?? selectedGene?.id ?? null;
 
     const resetEdgeMode = () => {
@@ -92,26 +100,32 @@ export function GenomePage() {
         <div>
             <h2>{genomeLabel.name}</h2>
             {genomeLabel.description && <p className="form-hint">{genomeLabel.description}</p>}
-            {isTemplate && <p className="template-note">{t("template_genome_readonly")}</p>}
-            {!isTemplate && !isOwned && <p className="template-note">{t("runtime_genome_readonly")}</p>}
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                <button onClick={() => setActiveModal("gene")} disabled={!canEditGenome}>
-                    {t("add_gene")}
-                </button>
-                <button
-                    onClick={() => {
-                        if (isEdgeMode) {
-                            resetEdgeMode();
-                        } else {
-                            setIsEdgeMode(true);
-                            setSelectedGene(null);
-                        }
-                    }}
-                    disabled={genes.length < 2 || !canEditGenome}
-                >
-                    {isEdgeMode ? t("cancel_edge_mode") : t("create_edge")}
-                </button>
-            </div>
+            {(isTemplate || (!isTemplate && !isOwned)) && <p className="template-note">{t("template_genome_readonly")}</p>}
+            {!(isTemplate || (!isTemplate && !isOwned)) &&
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    <button
+                        onClick={() => setActiveModal("gene")}
+                        disabled={!canEditGenome || createEffectOptions.length === 0}
+                    >
+                        {t("add_gene")}
+                    </button>
+                    {genes.length >= 2 && canEditGenome && (
+                        <button
+                            onClick={() => {
+                                if (isEdgeMode) {
+                                    resetEdgeMode();
+                                } else {
+                                    setIsEdgeMode(true);
+                                    setSelectedGene(null);
+                                }
+                            }}
+                            disabled={genes.length < 2 || !canEditGenome}
+                        >
+                            {isEdgeMode ? t("cancel_edge_mode") : t("create_edge")}
+                        </button>
+                    )}
+                </div>
+            }
             {isEdgeMode && (
                 <p>
                     {edgeSourceId === null
@@ -124,8 +138,6 @@ export function GenomePage() {
             {genome && (
                 <GenomeGraphComponent
                     graph={{ nodes: graphGenes, edges }}
-                    width={800}
-                    height={600}
                     selectedNodeId={selectedNodeId}
                     onNodeClick={handleGeneClick}
                     selectedEdgeId={null}
@@ -141,7 +153,7 @@ export function GenomePage() {
             {activeModal === "gene" && (
                 <Modal title={t("add_gene")} onClose={() => setActiveModal(null)}>
                     <NewGene
-                        availableEffectTypes={GENE_EFFECT_TYPES}
+                        availableEffectTypes={createEffectOptions}
                         onCreate={(gene) => {
                             createGeneMutation.mutate(gene, {
                                 onSuccess: () => setActiveModal(null),
@@ -159,8 +171,6 @@ export function GenomePage() {
                     }}
                 >
                     <NewEdgeWeight
-                        sourceName={`${getGeneEffectLabel(edgeDraftSource.effect_type, t)} ${edgeDraftSource.id}`}
-                        targetName={`${getGeneEffectLabel(edgeDraftTarget.effect_type, t)} ${edgeDraftTarget.id}`}
                         onCreate={(weight) => {
                             createEdgeMutation.mutate(
                                 { source: edgeDraft.source, target: edgeDraft.target, weight },
@@ -186,7 +196,11 @@ export function GenomePage() {
                     {isEditingGene ? (
                         <>
                             <NewGene
-                                availableEffectTypes={GENE_EFFECT_TYPES}
+                                availableEffectTypes={GENE_EFFECT_TYPES.filter(
+                                    (effectType) =>
+                                        effectType.name === selectedGene.effect_type
+                                        || !usedEffectTypes.has(effectType.name),
+                                )}
                                 initialValue={{
                                     effect_type: selectedGene.effect_type,
                                     weight: selectedGene.weight,
@@ -202,23 +216,23 @@ export function GenomePage() {
                                     );
                                 }}
                             />
-                            <button type="button" onClick={() => setIsEditingGene(false)}>
+                            <button className="modal-button" type="button" onClick={() => setIsEditingGene(false)}>
                                 {t("cancel")}
                             </button>
                         </>
                     ) : (
                         <>
-                            <p>{t("id")}: {selectedGene.id}</p>
                             <p>{t("effectType")}: {getGeneEffectLabel(selectedGene.effect_type, t)}</p>
                             <p>{t("gene_weight")}: {selectedGene.weight}</p>
                             <p>{t("threshold")}: {selectedGene.threshold}</p>
                             {selectedGene.default_active && <p>{t("default_active")}</p>}
                             {canEditGenome && (
                                 <div style={{ display: "flex", gap: 8 }}>
-                                    <button type="button" onClick={() => setIsEditingGene(true)}>
+                                    <button className="modal-button" type="button" onClick={() => setIsEditingGene(true)}>
                                         {t("edit")}
                                     </button>
                                     <button
+                                        className="modal-button"
                                         type="button"
                                         onClick={() => {
                                             deleteGeneMutation.mutate(selectedGene.id, {

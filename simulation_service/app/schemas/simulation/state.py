@@ -10,12 +10,3 @@ class RuntimeSnapshot(BaseModel):
     agents: list[dict[str, Any]] = Field(default_factory=list)
     territories: list[dict[str, Any]] = Field(default_factory=list)
     last_result: Optional[dict[str, Any]] = None
-
-
-class RuntimeStatusResponse(BaseModel):
-    simulation_id: int
-    status: str
-    tick: int
-    is_built: bool
-    is_running: bool
-    snapshot: Optional[RuntimeSnapshot] = None

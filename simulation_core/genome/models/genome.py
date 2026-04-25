@@ -23,6 +23,8 @@ class Genome:
             self._sync_edges_from_graph()
 
     def add_gene(self, gene: Gene) -> None:
+        if any(existing.effect_type == gene.effect_type for existing in self.genes.values()):
+            raise ValueError(f"Duplicate gene effect type: {gene.effect_type.value}")
         self.genes[gene.id] = gene
         self.graph.add_node(gene.id)
 

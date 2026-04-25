@@ -7,10 +7,12 @@ __pycache__/
 *.pyd
 
 .venv/
+.venv-py39-backup-*
 venv/
 env/
 
 .ruff_cache/
+.pycache/
 
 .env
 .env.*
