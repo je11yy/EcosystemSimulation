@@ -37,7 +37,7 @@
     "run_progress_ticks": "Выполнено {{completed}} из {{total}} тиков",
     "download_results": "Выгрузить результаты",
     "timeline": "Таймлайн",
-    "selected_tick": "Тик",
+    "selected_tick": "Шаг",
     "tick_result": "Результат тика",
     "historical_tick_readonly": "При просмотре прошлого тика редактирование отключено",
     "no_results_yet": "Результатов прогона пока нет. Запустите симуляцию на несколько шагов",

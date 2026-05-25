@@ -26,14 +26,6 @@ export const TerritoryGraphComponent = ({
             const territory = node as Territory;
             return (
                 <>
-                    <text
-                        x={position.x}
-                        y={position.y + 6}
-                        textAnchor="middle"
-                        className="graph-node-label"
-                    >
-                        {territory.id}
-                    </text>
                     <g transform={`translate(${position.x + 22}, ${position.y - 22})`}>
                         <circle r={13} className="territory-agent-badge" />
                         <text

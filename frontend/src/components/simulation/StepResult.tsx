@@ -10,9 +10,7 @@ export function StepResult({ selectedLog }: Props) {
 
     return (
         <section>
-            {!selectedLog ? (
-                <p className="form-hint">{t("no_results_yet")}</p>
-            ) : (
+            {selectedLog && (
                 <div>
                     <section className="simulation-step-result__panel">
                         <h2>{t("agent_actions_panel")}</h2>

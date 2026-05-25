@@ -3,8 +3,6 @@
 }
 
 input, textarea {
-    -webkit-appearance: none; /* Убирает стандартные стили iOS (тень, закругления) */
-    -webkit-user-select: none; /* Запрещает выделение текста внутри элемента */
     user-select: none;
     outline: none; /* Убирает обводку при фокусе */
 }
@@ -564,7 +562,7 @@ li {
   margin: 0 0 12px;
   padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 2px;
   background: var(--surface);
 }
 
@@ -572,7 +570,7 @@ li {
   margin-bottom: 8px;
   color: var(--text-muted);
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 300;
 }
 
 .territory-legend__scale {
@@ -587,7 +585,21 @@ li {
   margin-top: 6px;
   color: var(--text-muted);
   font-size: 0.88rem;
-  font-weight: 400;
+  font-weight: 300;
+  opacity: 0.8;
+}
+
+.edit-button {
+  color: black;
+  font-weight: 300;
+  margin-bottom: 0 !important;
+  line-height: 1.5em;
+  opacity: 0.5;
+}
+
+.edit-button .icon {
+  height: 24px;
+  width: 24px;
 }
 
 .simulation-step-result {
@@ -617,7 +629,6 @@ li {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
 }
 
 .simulation-timeline {
@@ -627,6 +638,12 @@ li {
   border-width: 1px 0 0 0;
   border-style: solid;
   border-color: var(--border);
+}
+
+.simulation-timeline span {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .simulation-timeline input[type="range"] {
@@ -691,6 +708,7 @@ li {
   display: block;
   color: var(--text-muted);
   font-size: 0.92rem;
+  font-weight: 300;
 }
 
 .simulation-step-result__metric strong {
@@ -698,6 +716,7 @@ li {
   margin-top: 6px;
   color: #111827;
   font-size: 1.35rem;
+  font-weight: 300;
 }
 
 .simulation-step-result__panels {
@@ -712,6 +731,7 @@ li {
   border: 1px solid var(--border);
   border-radius: 8px;
   margin-top: 18px;
+  background: white;
 }
 
 .simulation-step-result__panel h3 {
@@ -723,6 +743,7 @@ li {
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  background: white;
 }
 
 .metrics-charts__header {
@@ -808,6 +829,11 @@ li {
   margin-bottom: 20px;
 }
 
+.simulation-header h1 {
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
 .simulation-header button:has(.icon) {
   padding: 0;
   height: fit-content;
@@ -833,6 +859,19 @@ li {
   flex-direction: row;
   justify-content: flex-end;
   width: 100%;
+}
+
+.simulation-run-panel .create-form {
+  display: flex;
+  min-width: 280px;
+}
+
+.simulation-run-panel .form-input {
+  flex: 3;
+}
+
+.simulation-run-panel .form-input-button {
+  flex: 1;
 }
 
 .scenario-presets h3 {
