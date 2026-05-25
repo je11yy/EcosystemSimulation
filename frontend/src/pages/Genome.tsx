@@ -98,11 +98,13 @@ export function GenomePage() {
 
     return (
         <div>
+            <div className="label-template">
             <h2>{genomeLabel.name}</h2>
-            {genomeLabel.description && <p className="form-hint">{genomeLabel.description}</p>}
             {(isTemplate || (!isTemplate && !isOwned)) && <p className="template-note">{t("template_genome_readonly")}</p>}
+            </div>
+            {genomeLabel.description && <p className="form-hint">{genomeLabel.description}</p>}
             {!(isTemplate || (!isTemplate && !isOwned)) &&
-                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 12, marginTop: 20, justifyContent: "flex-end" }}>
                     <button
                         onClick={() => setActiveModal("gene")}
                         disabled={!canEditGenome || createEffectOptions.length === 0}
@@ -187,7 +189,7 @@ export function GenomePage() {
             )}
             {selectedGene && (
                 <Modal
-                    title={`${t("gene")} ${selectedGene.id}`}
+                    title={``}
                     onClose={() => {
                         setSelectedGene(null);
                         setIsEditingGene(false);
@@ -225,7 +227,7 @@ export function GenomePage() {
                             <p>{t("effectType")}: {getGeneEffectLabel(selectedGene.effect_type, t)}</p>
                             <p>{t("gene_weight")}: {selectedGene.weight}</p>
                             <p>{t("threshold")}: {selectedGene.threshold}</p>
-                            {selectedGene.default_active && <p>{t("default_active")}</p>}
+                            {selectedGene.default_active && <p>{t("is_default_active")}</p>}
                             {canEditGenome && (
                                 <div style={{ display: "flex", gap: 8 }}>
                                     <button className="modal-button" type="button" onClick={() => setIsEditingGene(true)}>

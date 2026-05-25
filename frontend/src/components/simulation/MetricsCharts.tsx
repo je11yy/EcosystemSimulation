@@ -111,6 +111,8 @@ export function MetricsCharts({ logs }: Props) {
         [logs, territoryIds],
     );
 
+    if (baseData.length < 2) return;
+
     return (
         <section className="metrics-charts">
             <div className="metrics-charts__header">

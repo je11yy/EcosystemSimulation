@@ -261,12 +261,12 @@ export function SimulationPage() {
             <div className="simulation-header">
                 <h1>{simulationQuery.data?.name ?? t('simulation')}</h1>
                 {isViewingLatestTick && (
-                    <button
+                    <button className="edit-button"
                         onClick={() => setIsEditMode(!isEditMode)}
-                        style={{ marginLeft: 8, fontSize: '1.2em', border: 'none', background: 'none', cursor: 'pointer' }}
+                        style={{ marginLeft: 8, border: 'none', background: 'none', cursor: 'pointer' }}
                         title={isEditMode ? t('exit_edit_mode') : t('enter_edit_mode')}
                     >
-                        <svg className="icon" xmlns="http://www.w3.org/2000/svg" version="1.0" width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000" preserveAspectRatio="xMidYMid meet">
+                        <svg className="icon" xmlns="http://www.w3.org/2000/svg" version="1.0" viewBox="0 0 512.000000 512.000000" preserveAspectRatio="xMidYMid meet">
                             <g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)" stroke="none">
                                 <path d="M3810 4678 c-51 -19 -153 -118 -1597 -1561 l-1541 -1540 -21 -81 c-74 -295 -221 -942 -221 -972 0 -49 45 -94 94 -94 34 0 993 221 1039 240 12 4 713 701 1558 1547 1711 1714 1582 1573 1582 1718 0 129 -15 151 -321 456 -244 243 -272 268 -325 288 -75 27 -172 27 -247 -1z m173 -199 c31 -16 475 -459 493 -491 8 -15 14 -44 14 -64 0 -36 -15 -52 -332 -371 -183 -183 -337 -333 -343 -333 -13 0 -595 582 -595 595 0 13 637 649 665 664 26 14 71 14 98 0z m-618 -1119 l300 -300 -1098 -1098 -1099 -1099 -390 -92 c-215 -50 -393 -90 -395 -88 -2 3 37 179 87 393 l92 389 1096 1098 c603 603 1099 1097 1102 1097 3 0 140 -135 305 -300z" />
                                 <path d="M1758 623 c-56 -35 -66 -117 -19 -164 l29 -29 1636 0 c1183 0 1642 3 1660 11 60 28 71 122 20 170 l-26 24 -1636 2 c-1512 2 -1639 1 -1664 -14z" />
@@ -274,9 +274,8 @@ export function SimulationPage() {
                         </svg>
                     </button>
                 )}
-                {!isEditMode && (
+                {!isEditMode && territories && territories.length !== 0 && (
                     <div className="simulation-run-panel">
-                        <label htmlFor="simulation-steps">{t("run_steps")}:</label>
                         <div className="create-form">
                             <input
                                 className="form-input"
@@ -285,6 +284,7 @@ export function SimulationPage() {
                                 min={1}
                                 max={150}
                                 value={stepsToRun}
+                                placeholder={t("run_steps")}
                                 onChange={(event) => setStepsToRun(event.target.value)}
                             />
                             <button
@@ -342,7 +342,7 @@ export function SimulationPage() {
                     </div>
                 )}
                 {isEditMode && (
-                    <div className="simulation-run-panel" style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    <div className="simulation-run-panel" style={{ display: "flex", gap: 8}}>
                         <button onClick={() => setActiveModal("territory")} disabled={!isViewingLatestTick}>
                             {t("create_territory")}
                         </button>
