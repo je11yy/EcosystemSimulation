@@ -23,6 +23,7 @@
   --surface-muted: #f0f7f1;
   --text-muted: #5b6b5f;
   --shadow: 0 20px 60px rgba(17, 24, 39, 0.18);
+  --gene: #69ab6b;
   scrollbar-width: none;
 }
 
@@ -243,6 +244,7 @@ label {
   margin-bottom: 20px;
   color: var(--text-muted);
   font-size: 0.92rem;
+  font-weight: 300;
 }
 
 .form-error {
@@ -441,7 +443,6 @@ li {
   max-width: 100%;
   height: auto;
   border: 1px solid var(--border);
-  border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
   width: 100%;
@@ -904,11 +905,20 @@ li {
   flex: 1;
 }
 
-.label-icon {
+.label-icon, .label-template {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
+}
+
+.label-template {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--dark-gray);
+}
+
+.label-template:has(.template-note) h2 {
+  margin: 0;
 }
 
 .scenario-card .label-button .label-icon {
@@ -941,7 +951,7 @@ li {
   border: 1px solid var(--dark-gray);
   border-radius: 8px;
   background: var(--gray);
-  font-weight: 400;
+  font-weight: 300;
   font-size: 0.875em;
   color: var(--gray-text);
   width: fit-content;

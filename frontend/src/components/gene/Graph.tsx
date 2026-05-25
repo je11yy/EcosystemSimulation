@@ -22,6 +22,6 @@ export const GenomeGraphComponent = ({
         getEdgeLabel={(edge) => edge.weight.toFixed(2)}
         getNodeColor={(node) => {
             const gene = node as Gene;
-            return gene.default_active ? 'lightgreen' : 'lightgray';
+            return gene.default_active ? 'var(--accent-light)' : 'var(--dark-gray)';
         }} />
 }  

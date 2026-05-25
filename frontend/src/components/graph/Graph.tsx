@@ -205,7 +205,7 @@ export const GraphComponent = ({
                             cy={position.y}
                             r={NODE_RADIUS}
                             fill={getNodeColor ? getNodeColor(node) : 'white'}
-                            stroke={node.id === selectedNodeId ? 'lightblue' : 'black'}
+                            stroke={getNodeColor ? `color-mix(in srgb, ${getNodeColor(node)} 60%, black)` : 'black'}
                             strokeWidth={1}
                         />
                         {renderNodeContent?.(node, position, node.id === selectedNodeId)}
