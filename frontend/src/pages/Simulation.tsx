@@ -95,6 +95,12 @@ export function SimulationPage() {
         () => logs.find((log) => log.tick === selectedTick) ?? logs.at(-1) ?? null,
         [logs, selectedTick],
     );
+    const visibleMetricsLogs = useMemo(() => {
+        if (selectedTick === null) {
+            return logs;
+        }
+        return logs.filter((log) => log.tick <= selectedTick);
+    }, [logs, selectedTick]);
     const latestTick = logs.at(-1)?.tick ?? null;
     const isViewingLatestTick = selectedLog === null || selectedLog.tick === latestTick;
 
@@ -420,7 +426,7 @@ export function SimulationPage() {
                 )}
             </div>
             {!isEditMode && (
-                <MetricsCharts logs={logs} />
+                <MetricsCharts logs={visibleMetricsLogs} />
             )}
             {activeModal === "territory" && (
                 <Modal title={t("create_territory")} onClose={() => setActiveModal(null)}>

@@ -80,6 +80,7 @@ export function NewGene({ availableEffectTypes, onCreate, initialValue, submitLa
                         id="threshold"
                         value={threshold}
                         onChange={(e) => setThreshold(e.target.value)}
+                        placeholder="3"
                     />
                     <p className="form-hint">{t(effectMeta.thresholdKey)}</p>
                 </div>
@@ -95,6 +96,7 @@ export function NewGene({ availableEffectTypes, onCreate, initialValue, submitLa
                     step={0.1}
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
+                    placeholder="1"
                 />
                 <p className="form-hint">{t(effectMeta.weightKey)}</p>
             </div>
