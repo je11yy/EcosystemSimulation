@@ -2,6 +2,13 @@
   box-sizing: border-box;
 }
 
+input, textarea {
+    -webkit-appearance: none; /* Убирает стандартные стили iOS (тень, закругления) */
+    -webkit-user-select: none; /* Запрещает выделение текста внутри элемента */
+    user-select: none;
+    outline: none; /* Убирает обводку при фокусе */
+}
+
 :root {
   color: #111827;
   background: #fff;
