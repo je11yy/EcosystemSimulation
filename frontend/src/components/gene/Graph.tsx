@@ -4,8 +4,6 @@ import { GraphComponent } from "../graph/Graph";
 
 export const GenomeGraphComponent = ({
     graph,
-    width = 900,
-    height = 600,
     selectedNodeId = null,
     onNodeClick,
     selectedEdgeId = null,
@@ -15,14 +13,13 @@ export const GenomeGraphComponent = ({
 }: Props) => {
     return <GraphComponent
         graph={graph}
-        width={width}
-        height={height}
         selectedNodeId={selectedNodeId}
         onNodeClick={onNodeClick}
         selectedEdgeId={selectedEdgeId}
         onEdgeClick={onEdgeClick}
         onNodePositionChange={onNodePositionChange}
         canDragNodes={canDragNodes}
+        getEdgeLabel={(edge) => edge.weight.toFixed(2)}
         getNodeColor={(node) => {
             const gene = node as Gene;
             return gene.default_active ? 'lightgreen' : 'lightgray';

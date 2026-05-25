@@ -5,4 +5,5 @@ export interface Territory extends Node {
 	temperature: number;
 	food_regen_per_tick: number;
 	food_capacity: number;
+	occupant_count?: number;
 }

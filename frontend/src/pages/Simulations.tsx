@@ -13,6 +13,7 @@ export function SimulationsPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [name, setName] = useState("");
+    const [expanded, setExpanded] = useState(false);
 
     const simulationsQuery = useQuery({
         queryKey: ["simulations"],
@@ -28,12 +29,30 @@ export function SimulationsPage() {
 
     return (
         <div>
-            <h1>{t("simulations")}</h1>
-            <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder={t("simulation_name")} />
-            <button className="form-input-button" onClick={() => createMutation.mutate(name, { onSuccess: () => setName("") })} disabled={createMutation.isPending || !name}>{t("create")}</button>
-            <section className="scenario-presets">
-                <h2>{t("scenario_presets")}</h2>
-                <p className="form-hint">{t("scenario_presets_hint")}</p>
+            <div className="create-form">
+                <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder={t("simulation_name")} />
+                <button className="form-input-button" onClick={() => createMutation.mutate(name, { onSuccess: () => setName("") })} disabled={createMutation.isPending || !name}>{t("create")}</button>
+            </div>
+            <section className="scenario-presets shortened">
+                <div className="scenario-presets__container">
+                    <div className="scenario-presets__header">
+                        <h3>{t("scenario_presets")}</h3>
+                        <p className="form-hint">{t("scenario_presets_hint")}</p>
+                    </div>
+                    <button
+                        className="accordion-button"
+                        type="button"
+                        onClick={() => {
+                            setExpanded(!expanded);
+                            const presets = document.querySelector(".scenario-presets");
+                            if (presets) {
+                                presets.classList.toggle("shortened");
+                            }
+                        }}
+                    >
+                        <div className="accordion-arrow" aria-hidden="true"></div>
+                    </button>
+                </div>
                 {scenariosQuery.isLoading && <p>{t("loading")}...</p>}
                 {scenariosQuery.data && (
                     <div className="scenario-presets__grid">

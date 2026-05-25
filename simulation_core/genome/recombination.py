@@ -7,8 +7,6 @@ from .effect_type import GeneEffectType
 from .models import Gene, Genome
 from .mutation import GenomeMutationResult, GenomeMutator
 
-MAX_GENERATED_GENE_NAME_LENGTH = 120
-
 
 @dataclass(frozen=True)
 class GenomeRecombinationConfig:
@@ -195,7 +193,6 @@ class GenomeRecombinator:
             return (
                 Gene(
                     id=child_gene_id,
-                    name=_combined_gene_name(mother, father),
                     effect_type=mother.effect_type,
                     x=_blend_toward_template(
                         mother.x,
@@ -242,6 +239,8 @@ class GenomeRecombinator:
         inherited = 0
         for gene in parent.genes.values():
             if gene.id in excluded_gene_ids:
+                continue
+            if any(existing.effect_type == gene.effect_type for existing in child.genes.values()):
                 continue
             if rng.random() > inheritance_rate:
                 continue
@@ -417,7 +416,6 @@ class GenomeRecombinator:
                 continue
             child.genes[gene_id] = Gene(
                 id=gene.id,
-                name=gene.name,
                 effect_type=gene.effect_type,
                 x=_blend_toward_template(
                     mother_gene.x,
@@ -453,7 +451,6 @@ class GenomeRecombinator:
                 continue
             child.genes[gene_id] = Gene(
                 id=gene.id,
-                name=gene.name,
                 effect_type=gene.effect_type,
                 x=mother_gene.x,
                 y=mother_gene.y,
@@ -511,7 +508,6 @@ class GenomeRecombinator:
 def _copy_gene(gene: Gene, gene_id: int) -> Gene:
     return Gene(
         id=gene_id,
-        name=gene.name,
         effect_type=gene.effect_type,
         x=gene.x,
         y=gene.y,
@@ -532,16 +528,6 @@ def _mutation_rate_multiplier(left: Genome, right: Genome) -> float:
     if not weights:
         return 1.0
     return max(0.0, sum(weights) / len(weights))
-
-
-def _combined_gene_name(left: Gene, right: Gene) -> str:
-    if left.name == right.name:
-        return left.name
-    combined = f"{left.name} / {right.name}"
-    if len(combined) <= MAX_GENERATED_GENE_NAME_LENGTH:
-        return combined
-    truncated = combined[: MAX_GENERATED_GENE_NAME_LENGTH - 3].rstrip()
-    return truncated + "..."
 
 
 def _next_gene_id(genome: Genome) -> int:

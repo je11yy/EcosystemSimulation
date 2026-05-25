@@ -8,7 +8,6 @@ from app.services.scenario.definitions import TEMPLATE_GENOME_KEYS_BY_NAME
 def gene_to_dict(gene: Gene) -> dict[str, Any]:
     return {
         "id": gene.id,
-        "name": gene.name,
         "position": position(gene.x, gene.y),
         "effect_type": gene.effect_type,
         "threshold": gene.threshold,

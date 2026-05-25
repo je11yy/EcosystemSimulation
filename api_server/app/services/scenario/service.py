@@ -62,9 +62,6 @@ class ScenarioService:
             self.session.add(
                 TerritoryEdge(source_id=source.id, target_id=target.id, movement_cost=weight)
             )
-            self.session.add(
-                TerritoryEdge(source_id=target.id, target_id=source.id, movement_cost=weight)
-            )
 
         for group in scenario.agent_groups:
             genome = templates[group.genome_key]
@@ -121,7 +118,6 @@ class ScenarioService:
         genes_by_key: dict[str, Gene] = {}
         for gene_definition in definition.genes:
             gene = Gene(
-                name=gene_definition.name,
                 effect_type=gene_definition.effect_type,
                 threshold=gene_definition.threshold,
                 weight=gene_definition.weight,

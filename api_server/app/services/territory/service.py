@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.mappers.territory import territory_edge_to_dict, territory_to_dict
@@ -89,9 +90,14 @@ class TerritoryService:
     async def create_edge(self, payload: TerritoryEdgeCreate, user_id: int) -> None:
         await get_or_404(self.session, Territory, payload.source, "Source territory")
         await get_or_404(self.session, Territory, payload.target, "Target territory")
+        if payload.source == payload.target:
+            raise HTTPException(status_code=400, detail="Edge cannot point to itself")
 
-        source_simulation_id = await self.territories.simulation_id_for_territory(payload.source)
-        target_simulation_id = await self.territories.simulation_id_for_territory(payload.target)
+        source_id = payload.source
+        target_id = payload.target
+
+        source_simulation_id = await self.territories.simulation_id_for_territory(source_id)
+        target_simulation_id = await self.territories.simulation_id_for_territory(target_id)
         if source_simulation_id is None:
             raise HTTPException(status_code=404, detail="Source territory not found")
         await self._ensure_simulation_owned(source_simulation_id, user_id)
@@ -105,12 +111,22 @@ class TerritoryService:
                 status_code=400,
                 detail="simulation_id does not match edge territories",
             )
+
+        existing_edge = await self.session.scalar(
+            select(TerritoryEdge).where(
+                TerritoryEdge.source_id == source_id,
+                TerritoryEdge.target_id == target_id,
+            )
+        )
+        if existing_edge is not None:
+            raise HTTPException(status_code=400, detail="Edge already exists")
+
         await self.runtime_orchestrator.mark_runtime_stale(user_id, source_simulation_id)
 
         self.session.add(
             TerritoryEdge(
-                source_id=payload.source,
-                target_id=payload.target,
+                source_id=source_id,
+                target_id=target_id,
                 movement_cost=payload.weight,
             )
         )

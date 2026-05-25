@@ -1,11 +1,23 @@
+import { lazy } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import { App } from "../App";
-import { SimulationPage } from "src/pages/Simulation";
-import { SimulationsPage } from "src/pages/Simulations";
-import { GenomesPage } from "src/pages/Genomes";
-import { GenomePage } from "src/pages/Genome";
-import { LoginPage } from "src/pages/Login";
 import { RequireAuth } from "src/auth/RequireAuth";
+
+const SimulationPage = lazy(async () => ({
+    default: (await import("src/pages/Simulation")).SimulationPage,
+}));
+const SimulationsPage = lazy(async () => ({
+    default: (await import("src/pages/Simulations")).SimulationsPage,
+}));
+const GenomesPage = lazy(async () => ({
+    default: (await import("src/pages/Genomes")).GenomesPage,
+}));
+const GenomePage = lazy(async () => ({
+    default: (await import("src/pages/Genome")).GenomePage,
+}));
+const LoginPage = lazy(async () => ({
+    default: (await import("src/pages/Login")).LoginPage,
+}));
 
 export const router = createBrowserRouter([
     {

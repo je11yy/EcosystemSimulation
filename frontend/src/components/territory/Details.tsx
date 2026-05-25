@@ -10,12 +10,11 @@ interface Props {
 export const TerritoryDetails: React.FC<Props> = ({ territory }) => {
     const { t } = useTranslation();
     return (
-        <div>
-            <h3>{t('id')}: {territory.id}</h3>
-            <p>{t('food')}: {territory.food}</p>
-            <p>{t('temperature')}: {territory.temperature}</p>
-            <p>{t('food_regen_per_tick')}: {territory.food_regen_per_tick}</p>
-            <p>{t('food_capacity')}: {territory.food_capacity}</p>
+        <div className="territory-details">
+            <p>{t('food')}: {territory.food.toFixed(2)}</p>
+            <p>{t('temperature')}: {territory.temperature.toFixed(2)}</p>
+            <p>{t('food_regen_per_tick')}: {territory.food_regen_per_tick.toFixed(2)}</p>
+            <p>{t('food_capacity')}: {territory.food_capacity.toFixed(2)}</p>
         </div>
     );
 };

@@ -21,6 +21,22 @@ class AgentRepository(Repository):
         )
         return await self.session.scalar(stmt)
 
+    async def list_with_links_by_ids(self, agent_ids: list[int]) -> list[Agent]:
+        if not agent_ids:
+            return []
+
+        stmt = (
+            select(Agent)
+            .where(Agent.id.in_(agent_ids))
+            .options(
+                selectinload(Agent.territory_links),
+                selectinload(Agent.genome_links),
+                selectinload(Agent.simulation_links),
+            )
+            .order_by(Agent.id)
+        )
+        return list((await self.session.scalars(stmt)).all())
+
     async def list_by_simulation(self, simulation_id: int) -> list[Agent]:
         stmt = (
             select(Agent)

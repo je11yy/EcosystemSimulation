@@ -3,12 +3,7 @@ import {
     createSimulation,
     deleteSimulation,
     updateSimulationName,
-    buildSimulation,
-    startSimulation,
-    stepSimulation,
     runSimulation,
-    pauseSimulation,
-    stopSimulation,
     createSimulationFromScenario,
 } from "src/api/simulations";
 
@@ -47,39 +42,35 @@ export function useSimulationsListMutations() {
 /** Мутации управления симуляцией (запуск, шаг, пауза и т.д.) */
 export function useSimulationControlMutations(simulationId: number) {
     const queryClient = useQueryClient();
+    const defaultChunkSize = 10;
 
     const invalidate = () => {
         queryClient.invalidateQueries({ queryKey: ["simulation", simulationId] });
         queryClient.invalidateQueries({ queryKey: ["agents", simulationId] });
     };
 
-    const buildMutation = useMutation({
-        mutationFn: () => buildSimulation(simulationId),
-        onSuccess: invalidate,
-    });
-
-    const startMutation = useMutation({
-        mutationFn: () => startSimulation(simulationId),
-        onSuccess: invalidate,
-    });
-
-    const stepMutation = useMutation({
-        mutationFn: () => stepSimulation(simulationId),
-        onSuccess: invalidate,
-    });
-
     const runMutation = useMutation({
-        mutationFn: () => runSimulation(simulationId),
-        onSuccess: invalidate,
-    });
+        mutationFn: async ({
+            steps,
+            onProgress,
+        }: {
+            steps: number;
+            onProgress?: (completed: number, total: number) => void;
+        }) => {
+            let completed = 0;
+            let lastResponse = null;
 
-    const pauseMutation = useMutation({
-        mutationFn: () => pauseSimulation(simulationId),
-        onSuccess: invalidate,
-    });
+            onProgress?.(0, steps);
 
-    const stopMutation = useMutation({
-        mutationFn: () => stopSimulation(simulationId),
+            while (completed < steps) {
+                const chunkSteps = Math.min(defaultChunkSize, steps - completed);
+                lastResponse = await runSimulation(simulationId, { steps: chunkSteps });
+                completed += chunkSteps;
+                onProgress?.(completed, steps);
+            }
+
+            return lastResponse;
+        },
         onSuccess: invalidate,
     });
 
@@ -93,12 +84,7 @@ export function useSimulationControlMutations(simulationId: number) {
     });
 
     return {
-        buildMutation,
-        startMutation,
-        stepMutation,
         runMutation,
-        pauseMutation,
-        stopMutation,
         updateNameMutation,
         deleteMutation,
     };

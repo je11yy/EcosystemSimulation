@@ -78,7 +78,6 @@ def _gene_payload(gene) -> dict[str, Any]:
     data = gene_to_dict(gene)
     return {
         "id": data["id"],
-        "name": data["name"],
         "effect_type": data["effect_type"],
         "x": data["position"]["x"],
         "y": data["position"]["y"],

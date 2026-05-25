@@ -11,6 +11,7 @@ from app.models.relations.simulation_agent import SimulationAgentRelation
 from app.repositories.genome.genome import GenomeRepository
 from app.schemas import GeneCreate, GeneEdgeCreate, GenomeCreate, Position
 from app.services.scenario import ScenarioService
+from app.services.scenario.definitions import TEMPLATE_GENOME_KEYS_BY_NAME
 from app.services.simulation.runtime_orchestrator import SimulationRuntimeOrchestrator
 
 
@@ -35,7 +36,7 @@ class GenomeService:
                 "id": genome.id,
                 "name": genome.name,
                 "is_template": genome.is_template,
-                "template_key": genome_list_item_to_dict(genome).get("template_key"),
+                "template_key": TEMPLATE_GENOME_KEYS_BY_NAME.get(genome.name),
             }
             for genome in genomes
         ]
@@ -57,10 +58,10 @@ class GenomeService:
         genome = await self.genomes.get_owned(genome_id, user_id)
         if genome is None:
             raise HTTPException(status_code=404, detail="Genome not found")
+        self._ensure_effect_type_available(genome, payload.effect_type.value)
         await self._mark_related_simulations_stale(genome_id, user_id)
 
         gene = Gene(
-            name=(payload.name or payload.effect_type.value),
             effect_type=payload.effect_type.value,
             threshold=payload.threshold,
             weight=payload.weight,
@@ -81,8 +82,12 @@ class GenomeService:
         payload: GeneCreate,
     ) -> None:
         gene = await self._get_owned_gene(genome_id, gene_id, user_id)
+        self._ensure_effect_type_available(
+            await self.genomes.get_owned(genome_id, user_id),
+            payload.effect_type.value,
+            ignored_gene_id=gene_id,
+        )
         await self._mark_related_simulations_stale(genome_id, user_id)
-        gene.name = payload.name or payload.effect_type.value
         gene.effect_type = payload.effect_type.value
         gene.threshold = payload.threshold
         gene.weight = payload.weight
@@ -110,6 +115,15 @@ class GenomeService:
             )
         if payload.source == payload.target:
             raise HTTPException(status_code=400, detail="Edge cannot point to itself")
+
+        existing_edge = await self.session.scalar(
+            select(GeneEdge).where(
+                GeneEdge.source_id == payload.source,
+                GeneEdge.target_id == payload.target,
+            )
+        )
+        if existing_edge is not None:
+            raise HTTPException(status_code=400, detail="Edge already exists")
         await self._mark_related_simulations_stale(genome_id, user_id)
 
         self.session.add(
@@ -161,3 +175,22 @@ class GenomeService:
         ).all()
         for simulation_id in simulation_ids:
             await self.runtime_orchestrator.mark_runtime_stale(user_id, simulation_id)
+
+    def _ensure_effect_type_available(
+        self,
+        genome: Genome | None,
+        effect_type: str,
+        ignored_gene_id: int | None = None,
+    ) -> None:
+        if genome is None:
+            raise HTTPException(status_code=404, detail="Genome not found")
+
+        for link in genome.gene_links:
+            gene = link.gene
+            if gene is None or gene.id == ignored_gene_id:
+                continue
+            if gene.effect_type == effect_type:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Gene with this effect type already exists in genome",
+                )

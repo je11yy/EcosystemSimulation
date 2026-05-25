@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, Float, ForeignKey
+from sqlalchemy import CheckConstraint, Float, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -16,6 +16,8 @@ class TerritoryEdge(Base):
 
     __table_args__ = (
         CheckConstraint("movement_cost >= 0", name="ck_territory_edges_movement_cost_non_negative"),
+        CheckConstraint("source_id != target_id", name="ck_territory_edges_not_self"),
+        UniqueConstraint("source_id", "target_id", name="uq_territory_edges_source_target"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

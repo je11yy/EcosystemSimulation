@@ -6,7 +6,6 @@ from ..effect_type import GeneEffectType
 @dataclass
 class Gene:
     id: int
-    name: str
     effect_type: GeneEffectType
     x: float = 0.0
     y: float = 0.0

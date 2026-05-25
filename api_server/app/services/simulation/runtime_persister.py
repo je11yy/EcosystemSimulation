@@ -10,8 +10,6 @@ from app.models.relations.territory_agent import TerritoryAgentRelation
 from app.repositories.agent import AgentRepository
 from app.repositories.simulation import SimulationRepository
 
-MAX_GENE_NAME_LENGTH = 120
-
 
 class RuntimeSnapshotPersister:
     def __init__(self, session: AsyncSession):
@@ -19,7 +17,9 @@ class RuntimeSnapshotPersister:
         self.agents = AgentRepository(session)
         self.simulations = SimulationRepository(session)
 
-    async def save_result(self, simulation_id: int, result: dict) -> None:
+    async def save_result(
+        self, simulation_id: int, result: dict, snapshot: dict | None = None
+    ) -> None:
         tick = int(result["tick"])
         existing_log = await self.session.scalar(
             select(SimulationLog).where(
@@ -38,18 +38,18 @@ class RuntimeSnapshotPersister:
                 step_result=result.get("step", {}),
                 metrics=result.get("metrics", {}),
                 events=self._event_payloads(result),
+                snapshot=snapshot or {},
             )
         )
 
     async def apply_snapshot(self, user_id: int, snapshot: dict, result: dict) -> None:
+        simulation_id = snapshot["simulation_id"]
         territories_by_id = {
             territory.id: territory
-            for territory in (
-                await self.simulations.get_details_parts(
-                    snapshot["simulation_id"],
-                    user_id,
-                )
-            )[1]
+            for territory in await self.simulations.list_owned_territories(
+                simulation_id,
+                user_id,
+            )
         }
         for territory_payload in snapshot.get("territories", []):
             territory = territories_by_id.get(territory_payload["id"])
@@ -61,15 +61,19 @@ class RuntimeSnapshotPersister:
             territory.food_capacity = territory_payload["food_capacity"]
 
         births_by_child_id = {int(birth["child_id"]): birth for birth in result.get("births", [])}
+        agent_ids = [int(agent_payload["id"]) for agent_payload in snapshot.get("agents", [])]
+        agents_by_id = {
+            agent.id: agent for agent in await self.agents.list_with_links_by_ids(agent_ids)
+        }
         parent_links: list[tuple[int, list[int]]] = []
         for agent_payload in snapshot.get("agents", []):
-            agent = await self.agents.get_with_links(agent_payload["id"])
+            agent = agents_by_id.get(int(agent_payload["id"]))
             if agent is None:
                 if agent_payload["id"] in births_by_child_id:
                     parent_links.append(
                         await self._create_runtime_child_agent(
                             user_id=user_id,
-                            simulation_id=snapshot["simulation_id"],
+                            simulation_id=simulation_id,
                             payload=agent_payload,
                             birth=births_by_child_id[agent_payload["id"]],
                         )
@@ -115,7 +119,6 @@ class RuntimeSnapshotPersister:
         birth: dict,
     ) -> tuple[int, list[int]]:
         genome = await self._create_runtime_genome(
-            user_id=user_id,
             child_id=payload["id"],
             genome_payload=payload.get("genome", {}),
         )
@@ -138,7 +141,6 @@ class RuntimeSnapshotPersister:
 
     async def _create_runtime_genome(
         self,
-        user_id: int,
         child_id: int,
         genome_payload: dict,
     ) -> Genome:
@@ -153,7 +155,6 @@ class RuntimeSnapshotPersister:
         gene_id_map = {}
         for index, gene_payload in enumerate(genome_payload.get("genes", []), start=1):
             gene = Gene(
-                name=_normalize_gene_name(gene_payload.get("name"), fallback=f"Gene {index}"),
                 effect_type=gene_payload["effect_type"],
                 threshold=gene_payload["threshold"],
                 weight=gene_payload["weight"],
@@ -247,10 +248,3 @@ class RuntimeSnapshotPersister:
                 ")"
             )
         )
-
-
-def _normalize_gene_name(name: str | None, fallback: str) -> str:
-    value = (name or fallback).strip()
-    if len(value) <= MAX_GENE_NAME_LENGTH:
-        return value
-    return value[: MAX_GENE_NAME_LENGTH - 3].rstrip() + "..."

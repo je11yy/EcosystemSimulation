@@ -3,7 +3,6 @@ from pydantic import BaseModel
 
 class RuntimeGene(BaseModel):
     id: int
-    name: str
     effect_type: str
     x: float = 0.0
     y: float = 0.0
