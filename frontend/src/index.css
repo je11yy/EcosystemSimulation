@@ -30,7 +30,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #fff;
+  background: var(--gray);
 }
 
 button,
@@ -119,6 +119,81 @@ select {
   width: 100%;
 }
 
+.simulations-list {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.simulations-list li {
+  border: 1px solid var(--dark-gray);
+  min-height: 80px;
+  padding: 30px;
+  align-self: center;
+  align-content: center;
+  font-weight: 400;
+  width: 100%;
+  background: white;
+  background: rgb(245, 245, 245);
+  transition: all 0.2s ease-out;
+  cursor: pointer;
+  border-radius: 20px;
+}
+
+.simulations-list li:hover {
+  background: rgb(245, 245, 245);
+  background: white;
+}
+
+.simulations-list li a {
+  font-weight: 300;
+  color: black;
+  opacity: 0.8;
+  transition: all 0.2s ease-out;
+  font-size: 1.2em;
+}
+
+.simulations-list li:hover a {
+  color: var(--accent);
+}
+
+.simulation-modal {
+  display: flex;
+  gap: 40px !important;
+}
+
+.simulation-modal .create-form {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.simulation-modal .create-form .form-input {
+  flex: 5;
+  border-radius: 0px;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  padding: 0;
+}
+
+.simulation-modal .create-form .form-input::placeholder {
+  font-weight: 300;
+  opacity: 0.5;
+}
+
+.simulation-modal .create-form .form-input-button {
+  flex: 1;
+  border-radius: 20px;
+}
+
+.simulation-modal span {
+  font-weight: 300;
+  font-size: 0.9em;
+  opacity: 0.6;
+}
+
 .select-container::after {
   border-width: 0 1px 1px 0;
   border-style: solid;
@@ -145,13 +220,6 @@ select {
 .modal-button {
   margin-top: 20px;
   width: 100%;
-}
-
-input:focus,
-input:hover,
-select:focus,
-select:hover {
-  border-color: var(--accent-light);
 }
 
 label {
@@ -238,6 +306,7 @@ h2,
 h3 {
   margin: 0 0 14px;
   line-height: 1.2;
+  font-weight: 300;
 }
 
 p,
@@ -400,6 +469,27 @@ li {
   pointer-events: none;
 }
 
+.create-simulation-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.create-simulation-link .icon {
+  color: var(--accent);
+  height: 32px;
+  width: 32px;
+  margin-left: auto;
+}
+
+.create-simulation-link span {
+  font-size: 0.9em;
+  color: black;
+  opacity: 0.8;
+  font-weight: 300;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -412,11 +502,11 @@ li {
 }
 
 .modal-content {
-  width: min(560px, 100%);
+  width: min(800px, 100%);
   max-height: min(760px, calc(100vh - 48px));
   overflow: auto;
   border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 20px;
+  border-radius: 2px;
   background: var(--surface);
   box-shadow: var(--shadow);
   scrollbar-width: none;
@@ -429,6 +519,7 @@ li {
   gap: 12px;
   padding: 18px 20px 12px;
   border-bottom: 1px solid var(--border);
+  background-color: var(--gray);
 }
 
 .modal-header h2 {
@@ -663,10 +754,9 @@ li {
 }
 
 .scenario-presets {
-  margin: 20px 0 24px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 20px;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .scenario-presets__container {
@@ -768,16 +858,13 @@ li {
 .scenario-presets__grid {
   display: flex;
   gap: 20px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-direction: column;
+
 }
 
 .scenario-card {
   display: grid;
-  gap: 10px;
   align-content: start;
-  padding: 14px 20px;
-  border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--surface);
   grid-template-rows: auto 1fr auto;
@@ -792,14 +879,30 @@ li {
 .scenario-card h3,
 .scenario-card p {
   margin: 0;
+  font-weight: 300;
+  font-size: 0.9em;
 }
 
-.scenario-card h3 {
-  margin-top: 8px;
+.scenario-card .label-button {
+  display: flex;
+  flex-direction: row;
 }
 
-.scenario-card p {
-  color: var(--text-muted);
+.scenario-card .label-button button {
+  margin: 0;
+  flex: 1;
+}
+
+.label-icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.scenario-card .label-button .label-icon {
+  align-content: center;
+  flex: 5;
 }
 
 .template-badge {
@@ -885,11 +988,18 @@ li {
   min-height: 34px;
   padding: 0;
   border: none;
-  background: #ffffff;
+  background: none;
   color: #111827;
   font-size: 20px;
   line-height: 1;
   margin-bottom: 1px;
+}
+
+.question-icon {
+  height: 1.1em;
+  width: 1.1em;
+  color: var(--accent-strong);
+  opacity: 0.8;
 }
 
 .icon-button:hover:not(:disabled) {

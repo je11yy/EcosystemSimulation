@@ -9,6 +9,9 @@
     "gene": "Ген",
     "gene_name": "Название гена",
     "add_gene": "Добавить ген",
+    "create_from_scratch": "Создать с нуля",
+    "create_new_simulation": "Создать новую симуляцию",
+    "create_simulation": "Создать симуляцию",
     "create_edge": "Создать ребро",
     "cancel_edge_mode": "Отменить создание ребра",
     "select_source_node": "Выберите первую вершину ребра",
@@ -217,7 +220,7 @@
     "simulation_name": "Название симуляции",
     "scenario_presets": "Готовые сценарии",
     "scenario_presets_hint": "Создают личную копию симуляции с территориями, агентами и защищенными геномами-шаблонами",
-    "create_from_scenario": "Создать сценарий",
+    "create_from_scenario": "Создать из готового сценария",
     "template": "Шаблон",
     "template_genome_readonly": "Это геном-шаблон. Его можно использовать в симуляциях, но нельзя редактировать или удалять",
     "template_genome_meta": {
