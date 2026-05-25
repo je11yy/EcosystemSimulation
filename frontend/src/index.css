@@ -13,7 +13,7 @@
   --accent: #166534;
   --accent-light: #6db689;
   --accent-strong: #14532d;
-  --accent-soft: #dcfce7;
+  --accent-soft: #7FA58A;
   --border: #d8e2d8;
   --surface: #ffffff;
   --gray: #f2f2f2;
@@ -119,17 +119,16 @@ select {
   width: 100%;
 }
 
-.simulations-list {
+.list {
   margin-top: 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.simulations-list li {
+.list li {
   border: 1px solid var(--dark-gray);
-  min-height: 80px;
-  padding: 30px;
+  padding: 16px;
   align-self: center;
   align-content: center;
   font-weight: 400;
@@ -139,22 +138,33 @@ select {
   transition: all 0.2s ease-out;
   cursor: pointer;
   border-radius: 20px;
+  margin: 0;
 }
 
-.simulations-list li:hover {
+.list .form-hint {
+  margin: 0;
+  margin-top: 10px;
+  font-weight: 300;
+  font-size: 0.8em;
+}
+
+.list li:hover {
   background: rgb(245, 245, 245);
   background: white;
 }
 
-.simulations-list li a {
+.list li a {
   font-weight: 300;
   color: black;
   opacity: 0.8;
   transition: all 0.2s ease-out;
-  font-size: 1.2em;
 }
 
-.simulations-list li:hover a {
+.list li:hover a {
+  color: var(--accent);
+}
+
+.list li:hover .icon {
   color: var(--accent);
 }
 
@@ -906,17 +916,24 @@ li {
   flex: 5;
 }
 
+.template {
+  display: flex;
+  align-items: center;
+}
+
+.template .icon {
+  opacity: 0.3;
+}
+
 .template-badge {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
-  margin-left: 8px;
-  padding: 0 8px;
-  border-radius: 8px;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-  font-size: 0.85rem;
-  font-weight: 800;
+  margin-right: 6px;
+  color: black;
+  font-size: 0.8em;
+  font-weight: 400;
+  opacity: 0.3;
 }
 
 .template-note {

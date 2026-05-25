@@ -39,7 +39,7 @@ export function SimulationsPage() {
             {simulationsQuery.isLoading && <p>{t("loading")}...</p>}
             {simulationsQuery.isError && <p>{t("error_loading_simulations")}</p>}
             {simulationsQuery.data && (
-                <ul className="simulations-list">
+                <ul className="list">
                     {simulationsQuery.data.map(simulation => (
                         <li key={simulation.id} onClick={() => navigate(`/simulations/${simulation.id}`)}>
                             <Link to={`/simulations/${simulation.id}`}>

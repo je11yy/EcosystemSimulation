@@ -12,6 +12,8 @@
     "create_from_scratch": "Создать с нуля",
     "create_new_simulation": "Создать новую симуляцию",
     "create_simulation": "Создать симуляцию",
+    "create_genome": "Создать геном",
+    "create_new_genome": "Создать новый геном",
     "create_edge": "Создать ребро",
     "cancel_edge_mode": "Отменить создание ребра",
     "select_source_node": "Выберите первую вершину ребра",
